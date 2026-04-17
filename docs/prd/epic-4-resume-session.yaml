@@ -1,0 +1,195 @@
+epic_id: 4
+title: "断点续答"
+description: |
+  实现学生中途退出 / App 异常崩溃后再次扫码同一学号自动续答的能力。
+  断点定义为最后一个 status=done 的题目之后的首个未完成题目；
+  分阶段模式半完成题（题干已写但选项未写，理论上不应发生因 Story 2.5 BR-1.5 已避免）
+  以及 status=error / not_answered 的题目均按『整题重做』策略处理（用户决策 Q4=A）。
+
+stories:
+  - id: "4.1"
+    title: "同学号会话发现与续答入口路由"
+    repository_type: monolith
+    estimated_complexity: medium
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "扫码后自动检测是否存在未完成会话"
+        scenario:
+          given: "学生扫码学号 S001，已选定 configId cog-mem-2026q3"
+          when: "进入欢迎确认页前先调用 ResultRepository.findResumableSession()"
+          then:
+            - "扫描 /sdcard/WenJuanPro/results/ 下所有文件"
+            - "匹配文件名格式: {*}_{S001}_{cog-mem-2026q3}_{*}.txt"
+            - "若匹配到至少 1 份且其完成题数 < config 总题数 → 视为可续答；取最近一份（按时间戳最大）"
+            - "若所有匹配文件均已完成 → 视为新会话，跳过续答提示"
+            - "若无匹配 → 视为新会话"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "完成判定: 文件中所有 config 题的 qid 均出现且 status ∈ {done}"
+          - id: "BR-1.2"
+            rule: "未完成判定: 文件中至少有 1 题 qid 未出现，或某 qid 的 status ∈ {not_answered, error}"
+          - id: "BR-1.3"
+            rule: "可续答时：跳过欢迎页的『开始答题』按钮，跳转到续答提示页（AC2）"
+          - id: "BR-1.4"
+            rule: "续答时复用同一份结果文件，文件名（含原 sessionStart 时间戳）不变"
+        data_validation: []
+        error_handling:
+          - scenario: "结果文件解析失败（损坏 / 半行）"
+            code: "RESULT_FILE_CORRUPT"
+            message: "上次会话的记录文件已损坏，将按新会话开始"
+            action: "重命名损坏文件为 {原名}.corrupt.{时间戳}，开新会话"
+        interaction:
+          - trigger: "扫码成功后"
+            behavior: "在欢迎确认页加载前调用 findResumableSession（< 1s 内完成）"
+        examples:
+          - input: "results/ 下有 abc_S001_cog-mem-2026q3_20260417-103045.txt（5 题中已完成 3 题）"
+            expected: "返回 ResumableSession(file=该文件, completedQids=[Q1,Q2,Q3], remaining=[Q4,Q5])"
+          - input: "results/ 下无匹配文件"
+            expected: "返回 null，走新会话流程"
+
+      - id: AC2
+        title: "续答提示页让学生确认是否继续"
+        scenario:
+          given: "findResumableSession 返回非 null 的 ResumableSession"
+          when: "页面进入"
+          then:
+            - "页面顶部显示『检测到未完成的测评』"
+            - "中部显示: 学号 S001、configId、已完成 X 题 / 总 N 题、上次开始时间"
+            - "底部两个按钮: 『继续上次答题』（主按钮，Primary 蓝）+ 『放弃并重新开始』（次要按钮，灰）"
+            - "『继续上次答题』→ 跳转到首个未完成题目"
+            - "『放弃并重新开始』→ 弹出二次确认（『将丢失上次记录，确认放弃？』）→ 确认后将旧文件重命名为 {原名}.abandoned.{时间戳}，开新会话"
+        business_rules:
+          - id: "BR-2.1"
+            rule: "二次确认弹窗的『确认放弃』按钮放在右侧，符合 Material Design 习惯"
+          - id: "BR-2.2"
+            rule: "放弃旧会话不删除文件，仅重命名（保留研究员追溯能力）"
+        error_handling:
+          - scenario: "重命名旧文件失败（权限丢失 / 磁盘问题）"
+            code: "ABANDON_RENAME_FAILED"
+            message: "无法重命名旧记录，请联系研究员"
+            action: "阻塞，提示研究员处理"
+        interaction:
+          - trigger: "页面进入"
+            behavior: "无入场动画"
+          - trigger: "点击『继续上次答题』"
+            behavior: "立即跳转到首个未完成题目"
+          - trigger: "点击『放弃并重新开始』"
+            behavior: "弹出二次确认弹窗"
+        examples:
+          - input: "S001 + cog-mem-2026q3 + 已完成 3/5"
+            expected: "续答提示页 + 两个按钮"
+          - input: "点击『继续上次答题』"
+            expected: "跳转到 Q4 作答页"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["2.5"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "4.2"
+    title: "已答题跳过与从中断点继续"
+    repository_type: monolith
+    estimated_complexity: medium
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "续答时跳过 status=done 的题目"
+        scenario:
+          given: "用户在续答提示页点击『继续上次答题』，已完成 [Q1, Q2, Q3]"
+          when: "进入作答流程"
+          then:
+            - "作答控制器加载 config 全部题目"
+            - "依次比对每题 qid 是否在已完成集合中"
+            - "已完成（status=done）的 qid 直接跳过，不渲染、不计时"
+            - "首个未完成 qid 即为续答起点（如 Q4）"
+            - "Q4 → Q5 按正常流程进行；每题完成后追加写入同一份结果文件"
+            - "全部完成后跳转完成页"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "已完成判定严格按 status=done；status=not_answered 或 status=error 的题目不视为已完成，需重做"
+          - id: "BR-1.2"
+            rule: "重做（not_answered / error）时该题在结果文件中以新一行覆盖旧行: 解析时按 qid 取最后一行"
+            "（追加策略保留所有版本，避免破坏已落盘行）"
+          - id: "BR-1.3"
+            rule: "续答不重置 sessionStart 时间戳，文件名不变"
+        data_validation: []
+        error_handling:
+          - scenario: "config 在上次会话后被研究员修改（题数增减、qid 变更）"
+            code: "CONFIG_DRIFTED"
+            message: "题库已发生变化，无法续答上次会话；请放弃并重新开始"
+            action: "强制返回续答提示页，禁用『继续上次答题』按钮"
+        interaction:
+          - trigger: "续答开始"
+            behavior: "无入场动画，直接进入首个未完成题目"
+        examples:
+          - input: "config 5 题，已完成 [Q1,Q2,Q3]，续答"
+            expected: "直接进入 Q4；Q4、Q5 完成后跳转完成页"
+          - input: "config 已完成 [Q1,Q2]，Q3 status=not_answered，续答"
+            expected: "直接进入 Q3 重做（不跳过）"
+
+      - id: AC2
+        title: "config 漂移检测"
+        scenario:
+          given: "上次会话基于 config v1（5 题），本次扫描时 config 已被改为 6 题或 qid 变更"
+          when: "续答前比对 config 与 result"
+          then:
+            - "检测 config 题数与 result 已记录题数 + 待答题数是否一致"
+            - "检测 result 中的 qid 是否全部存在于当前 config"
+            - "任一不一致 → 视为漂移，按 BR error_handling 处理"
+        business_rules:
+          - id: "BR-2.1"
+            rule: "漂移检测仅做提示，不自动迁移；研究员需明确决策"
+        error_handling:
+          - scenario: "config 漂移"
+            code: "CONFIG_DRIFTED"
+            message: "题库已发生变化，无法续答上次会话；请放弃并重新开始"
+            action: "在续答提示页禁用『继续上次答题』，仅保留『放弃并重新开始』"
+        examples:
+          - input: "上次 5 题, 当前 config 6 题"
+            expected: "续答提示页禁用『继续上次答题』"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["4.1"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "4.3"
+    title: "半完成题（分阶段模式）整题重做策略"
+    repository_type: monolith
+    estimated_complexity: low
+    priority: P1
+    acceptance_criteria:
+      - id: AC1
+        title: "status=partial 题目按整题重做"
+        scenario:
+          given: "结果文件中某 staged 模式题（如 Q3）status=partial（理论上不应发生，但若发生则按本规则处理）"
+          when: "续答到达该 qid"
+          then:
+            - "题干阶段与选项阶段的两个倒计时都重新开始（与初次作答完全一致）"
+            - "完成后追加新的一行（覆盖原 partial 行的语义；解析时按 qid 取最后一行）"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "Story 2.5 BR-1.5 已规定 staged 模式只在题目完整结束时才写一行；因此 partial 行理论上不会出现"
+            "但若磁盘异常 / 早期版本数据 / 手动改动产生了 partial 行，本 AC 提供兜底"
+          - id: "BR-1.2"
+            rule: "重做不修改 sessionStart 时间戳，文件名不变"
+          - id: "BR-1.3"
+            rule: "结果文件中保留 partial 行 + 新的 done 行；解析按 qid 取最后一行（done 优先）"
+        data_validation: []
+        error_handling:
+          - scenario: "重做时仍写入失败"
+            code: "RESULT_WRITE_FAILED"
+            message: "数据保存失败，请联系研究员"
+            action: "同 Story 2.3 重试 3 次终止"
+        examples:
+          - input: "Q3 旧记录 status=partial（stemMs=10000, optionsMs=-, answer=, status=partial）"
+            expected: "续答到 Q3 时题干 + 选项两阶段完整重做；新行 status=done 追加；解析时取新行"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["4.2"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null

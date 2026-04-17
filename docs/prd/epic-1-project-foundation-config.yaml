@@ -1,0 +1,241 @@
+epic_id: 1
+title: "项目基础与配置加载"
+description: |
+  建立 Android 工程骨架与文件 IO 基础设施，交付测评集选择页作为首屏可见功能。
+  完成本 Epic 后，研究员可独立验证 /sdcard/WenJuanPro/config/ 下 TXT 配置是否正确，
+  并对损坏文件获得明确的行号级错误提示。
+
+stories:
+  - id: "1.1"
+    title: "工程骨架与导航框架"
+    repository_type: monolith
+    estimated_complexity: low
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "Android 工程可成功构建并启动到首屏"
+        scenario:
+          given: "新建 Android Studio 工程，最低 API 26、目标 API 34"
+          when: "执行 ./gradlew assembleDebug 并安装到设备"
+          then:
+            - "工程使用 Kotlin 1.9+、Compose BOM、Material 3"
+            - "App 启动后呈现一个空白 Composable 占位首屏（标题: WenJuanPro）"
+            - "已配置 Hilt + Coroutines + Timber + ktlint"
+            - "屏幕方向锁定为 portrait"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "App 仅依赖白名单内的库；禁止出现 OkHttp / Retrofit / Firebase / 任何统计 SDK"
+          - id: "BR-1.2"
+            rule: "package name 为 ai.wenjuanpro.app；applicationId 同名"
+        error_handling:
+          - scenario: "构建依赖冲突或 SDK 版本不匹配"
+            code: "BUILD_ERROR"
+            message: "构建失败：{原因}"
+            action: "停止构建，控制台输出修复建议"
+        examples:
+          - input: "./gradlew assembleDebug"
+            expected: "BUILD SUCCESSFUL，APK 产物可在真机/模拟器安装并启动"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: []
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "1.2"
+    title: "MANAGE_EXTERNAL_STORAGE 授权引导"
+    repository_type: monolith
+    estimated_complexity: medium
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "未授权时引导用户跳转系统设置"
+        scenario:
+          given: "App 首次启动，MANAGE_EXTERNAL_STORAGE 未授权"
+          when: "用户进入 App 首屏"
+          then:
+            - "App 自动检测授权状态（Environment.isExternalStorageManager()）"
+            - "未授权时跳转到授权引导页（不能进入测评集选择页）"
+            - "授权引导页展示『需要全部文件访问权限以读取题库与写入结果』说明文案"
+            - "提供『前往系统设置授权』按钮，点击后跳转 ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION"
+            - "授权引导页提供『已完成授权，重新检测』按钮"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "在 Android 11+ (API 30+) 使用 MANAGE_EXTERNAL_STORAGE；Android 10 及以下使用传统 READ/WRITE_EXTERNAL_STORAGE 兼容路径"
+          - id: "BR-1.2"
+            rule: "授权检测发生在每次 onResume，确保用户从系统设置返回后立即生效"
+          - id: "BR-1.3"
+            rule: "授权状态变更不需要重启 App"
+        error_handling:
+          - scenario: "用户拒绝授权或返回时仍未授权"
+            code: "PERMISSION_DENIED"
+            message: "未获取存储权限，无法读取题库。请前往系统设置开启『所有文件访问权限』"
+            action: "保持在授权引导页，按钮文案变为『再次前往系统设置』"
+          - scenario: "设备 ROM 不支持该 Intent"
+            code: "INTENT_UNAVAILABLE"
+            message: "无法自动跳转到授权页面，请手动前往：设置 → 应用 → WenJuanPro → 权限 → 全部文件访问"
+            action: "展示纯文本指引，提供复制路径按钮"
+        interaction:
+          - trigger: "首次启动且未授权"
+            behavior: "首屏直接显示授权引导页，无淡入动画"
+          - trigger: "点击『前往系统设置授权』"
+            behavior: "跳转外部系统设置；返回 App 后 onResume 自动重新检测"
+          - trigger: "授权成功后"
+            behavior: "自动导航到测评集选择页（Story 1.4），无需手动确认"
+        examples:
+          - input: "首次启动，无任何权限"
+            expected: "授权引导页 + 跳转设置按钮"
+          - input: "授权后从系统设置返回"
+            expected: "自动检测到已授权，导航到测评集选择页"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["1.1"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "1.3"
+    title: "TXT config 解析器与 schema 校验"
+    repository_type: monolith
+    estimated_complexity: high
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "解析合法 config TXT 文件"
+        scenario:
+          given: "/sdcard/WenJuanPro/config/ 下存在一份合法的 cog-mem-2026q3.txt"
+          when: "App 启动后扫描该目录并调用 ConfigRepository.loadAll()"
+          then:
+            - "解析器返回 Config 对象，包含 configId、title、题目数组"
+            - "每道题包含 qid、type (single/multi/memory)、mode (all_in_one/staged)、durationMs / stemDurationMs+optionsDurationMs、题干、选项、正确答案、得分"
+            - "解析过程在 IO Dispatcher 执行，不阻塞主线程"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "config 文件 header 必须包含 configId 与 title 两个字段；缺失任一字段则该 config 标记为损坏"
+          - id: "BR-1.2"
+            rule: "configId 缺失时回退使用文件名（去 .txt 扩展）作为 configId"
+          - id: "BR-1.3"
+            rule: "题目以 [Q1] [Q2] ... 形式分节，节内 key:value 行；section 顺序即题目顺序"
+          - id: "BR-1.4"
+            rule: "选项分隔符为竖线 |；选项可包含图片引用 `img:文件名.png`（文件须存在于 /sdcard/WenJuanPro/assets/）"
+          - id: "BR-1.5"
+            rule: "memory 题型固定 64 格点阵，10 个蓝点位置由 config 中的 dotsPositions 字段指定（10 个 0-63 索引）"
+          - id: "BR-1.6"
+            rule: "文件编码必须为 UTF-8（无 BOM）；BOM 存在时报警告但仍可解析"
+        data_validation:
+          - field: "configId"
+            type: "string"
+            required: true
+            rules: "1-64 字符，仅限字母、数字、连字符、下划线"
+            error_message: "configId 格式非法：只允许字母、数字、-、_"
+          - field: "题目类型 type"
+            type: "string"
+            required: true
+            rules: "枚举: single | multi | memory"
+            error_message: "未知题型：{值}（合法值: single/multi/memory）"
+          - field: "呈现模式 mode"
+            type: "string"
+            required: true
+            rules: "枚举: all_in_one | staged"
+            error_message: "未知呈现模式：{值}（合法值: all_in_one/staged）"
+          - field: "倒计时 durationMs / stemDurationMs / optionsDurationMs"
+            type: "number"
+            required: true
+            rules: "正整数，1000-600000（即 1 秒至 10 分钟）"
+            error_message: "倒计时时长非法：必须为 1000-600000 毫秒之间的正整数"
+          - field: "memory 题 dotsPositions"
+            type: "array"
+            required: true
+            rules: "恰好 10 个互不重复的 0-63 整数"
+            error_message: "记忆题点位非法：必须为 10 个互不重复的 0-63 索引"
+        error_handling:
+          - scenario: "config 文件 header 缺失必填字段"
+            code: "CONFIG_HEADER_MISSING"
+            message: "{文件名}: 第 {行号} 行缺少必填字段 {字段名}"
+            action: "该 config 标记为 invalid，不阻塞其他合法 config 的加载"
+          - scenario: "题目字段不合法（类型、模式、倒计时越界）"
+            code: "CONFIG_FIELD_INVALID"
+            message: "{文件名} [{Qid}] 第 {行号} 行: {具体原因}"
+            action: "该 config 标记为 invalid，错误详情可在测评集选择页查看"
+          - scenario: "选项中引用的图片文件不存在"
+            code: "ASSET_NOT_FOUND"
+            message: "{文件名} [{Qid}]: 选项引用的图片 {路径} 不存在"
+            action: "该 config 标记为 invalid"
+          - scenario: "文件编码非 UTF-8"
+            code: "ENCODING_INVALID"
+            message: "{文件名}: 文件编码非 UTF-8，无法解析"
+            action: "该 config 标记为 invalid"
+        examples:
+          - input: |
+              # configId: cog-mem-2026q3
+              # title: 认知记忆测评 v1
+              [Q1]
+              type: single
+              mode: all_in_one
+              durationMs: 30000
+              stem: 你今天感觉如何？
+              options: 很好|一般|较差|很差
+              correct: 1
+              score: 0|0|0|0
+            expected: "Config(configId=cog-mem-2026q3, title=认知记忆测评 v1, questions=[Q1: SingleChoice(...)])"
+          - input: "header 缺失 title"
+            expected: "Invalid 标记 + 错误信息: 'cog-mem-2026q3.txt: 第 2 行缺少必填字段 title'"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["1.1"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "1.4"
+    title: "测评集选择页（首屏）"
+    repository_type: monolith
+    estimated_complexity: medium
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "展示所有 config 文件并区分有效/损坏"
+        scenario:
+          given: "已授权 + /sdcard/WenJuanPro/config/ 下有 N 个 config 文件（部分损坏）"
+          when: "App 进入测评集选择页"
+          then:
+            - "页面顶部显示『请选择测评集』标题与刷新按钮"
+            - "以卡片列表呈现所有 config，每张卡片包含 configId、title、题数、状态徽标（有效/损坏）"
+            - "有效卡片可点击；损坏卡片置灰且不可点击，但可点击『查看错误详情』查看具体错误信息"
+            - "无任何 config 时展示空态：『请将 config TXT 文件放入 /sdcard/WenJuanPro/config/ 后点击刷新』"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "刷新按钮触发 ConfigRepository.loadAll() 重新扫描目录"
+            "扫描必须在 IO 线程，UI 显示加载指示器（最长 5 秒，超时显示失败提示）"
+          - id: "BR-1.2"
+            rule: "点击有效 config 卡片后，将该 configId 存入会话状态并导航到扫码登录页（Story 2.1）"
+          - id: "BR-1.3"
+            rule: "config 列表按 configId 字典序排序"
+        data_validation: []
+        error_handling:
+          - scenario: "config 目录不存在"
+            code: "CONFIG_DIR_MISSING"
+            message: "未找到题库目录 /sdcard/WenJuanPro/config/，已自动创建"
+            action: "自动创建空目录，展示空态文案"
+          - scenario: "扫描超时（5s）"
+            code: "SCAN_TIMEOUT"
+            message: "扫描题库超时，请检查目录是否存在大量文件"
+            action: "停止扫描，展示重试按钮"
+        interaction:
+          - trigger: "进入页面"
+            behavior: "自动触发一次 loadAll()，展示加载指示器"
+          - trigger: "点击刷新按钮"
+            behavior: "重新扫描；按钮变灰直到完成"
+          - trigger: "点击损坏 config 的『查看错误详情』"
+            behavior: "弹出底部 sheet 展示完整错误列表（行号 + 字段 + 原因）"
+        examples:
+          - input: "目录下有 cog-mem-2026q3.txt（合法）+ broken.txt（缺 title）"
+            expected: "两张卡片：cog-mem-2026q3 标记『有效，5 题』可点；broken 标记『损坏』置灰但可查看详情"
+          - input: "目录为空"
+            expected: "空态文案 + 刷新按钮"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["1.2", "1.3"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null

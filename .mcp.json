@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "orchestrix": {
+      "type": "http",
+      "url": "https://orchestrix-mcp.youlidao.ai/api/mcp",
+      "headers": {
+        "Authorization": "Bearer orch_188b274c879a729353bd9161e54da2af"
+      }
+    },
+    "youlidao-gateway": {
+      "command": "node",
+      "args": [
+        "/opt/youlidao/mcp-client/index.js"
+      ],
+      "env": {
+        "POD_AGENT_URL": "http://localhost:9876"
+      }
+    }
+  }
+}

@@ -1,0 +1,383 @@
+epic_id: 2
+title: "扫码登录与基础题型作答"
+description: |
+  实现 QR 扫码 → 欢迎页 → 单选/多选题（同屏 + 分阶段模式）→ 结果实时落盘的完整主路径。
+  完成本 Epic 后即可承载一份不含记忆题的离线问卷测评。
+
+stories:
+  - id: "2.1"
+    title: "扫码登录与学号识别"
+    repository_type: monolith
+    estimated_complexity: medium
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "通过摄像头扫描二维码并将内容作为学号"
+        scenario:
+          given: "用户在测评集选择页选定一个有效 config 后进入扫码页"
+          when: "用户将二维码对准取景框"
+          then:
+            - "App 调用 CameraX 预览 + ZXing Android Embedded 解码二维码内容"
+            - "识别成功后将二维码内容作为学号（studentId）存入会话状态"
+            - "自动导航到欢迎确认页（Story 2.2）"
+            - "全程不提供任何键盘手输入口"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "学号格式约束：1-64 字符，仅限字母、数字、连字符、下划线；不符合则提示并继续扫码"
+          - id: "BR-1.2"
+            rule: "扫码成功后摄像头立即停止，避免重复识别"
+          - id: "BR-1.3"
+            rule: "需 CAMERA 运行时权限；首次进入时申请，拒绝则展示无摄像头提示并提供重新申请按钮"
+          - id: "BR-1.4"
+            rule: "不支持手动输入学号（防止数据污染）"
+        data_validation:
+          - field: "二维码内容（学号）"
+            type: "string"
+            required: true
+            rules: "1-64 字符，正则 ^[A-Za-z0-9_-]+$"
+            error_message: "学号格式非法：仅允许字母、数字、-、_"
+        error_handling:
+          - scenario: "学号格式非法"
+            code: "STUDENT_ID_INVALID"
+            message: "学号格式非法：{扫到的内容}"
+            action: "保持扫码页打开，2 秒 toast 后继续等待新二维码"
+          - scenario: "CAMERA 权限被拒"
+            code: "CAMERA_DENIED"
+            message: "未获取摄像头权限，无法扫码登录"
+            action: "展示『重新申请权限』按钮 + 『前往系统设置』备选按钮"
+          - scenario: "设备无后置摄像头"
+            code: "CAMERA_UNAVAILABLE"
+            message: "未检测到摄像头，无法扫码登录"
+            action: "展示错误页，提供返回测评集选择页按钮"
+        interaction:
+          - trigger: "进入扫码页"
+            behavior: "全屏摄像头预览 + 半透明取景框遮罩 + 提示文案『请将二维码对准取景框』"
+          - trigger: "识别成功"
+            behavior: "震动反馈一次（50ms），摄像头停止，立即跳转下一页"
+          - trigger: "识别到非法学号"
+            behavior: "底部 toast 显示错误，2 秒后自动消失，摄像头继续工作"
+        examples:
+          - input: "扫码内容: S001"
+            expected: "学号 S001 入会话，跳转欢迎确认页"
+          - input: "扫码内容: 含空格的字符串"
+            expected: "底部 toast '学号格式非法'，继续扫码"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["1.4"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "2.2"
+    title: "欢迎确认页"
+    repository_type: monolith
+    estimated_complexity: low
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "展示学号与测评信息并等待开始确认"
+        scenario:
+          given: "扫码成功后跳转到欢迎确认页"
+          when: "页面渲染完成"
+          then:
+            - "顶部展示『欢迎，{学号}』"
+            - "中部展示选定 config 的 title、题目总数、预计用时（所有题倒计时之和）"
+            - "底部显示『开始答题』按钮"
+            - "学生点击『开始答题』后记录测评开始时间戳，跳转到第一题"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "测评开始时间戳取点击『开始答题』的瞬时时间，格式 yyyyMMdd-HHmmss，用于结果文件命名"
+          - id: "BR-1.2"
+            rule: "如果该学号在该 configId 下已有未完成的结果文件存在，跳转到断点续答提示页（Story 4.1），而非首题"
+          - id: "BR-1.3"
+            rule: "预计用时按所有题（含 staged 模式两阶段）倒计时总和计算，向上取整到分钟"
+        error_handling:
+          - scenario: "无可读取的 SSAID"
+            code: "SSAID_UNAVAILABLE"
+            message: "无法读取设备 ID，请联系研究员"
+            action: "阻塞，不允许进入作答；展示重试按钮"
+        interaction:
+          - trigger: "页面进入"
+            behavior: "无入场动画"
+          - trigger: "点击『开始答题』"
+            behavior: "按钮立即禁用，500ms 内完成跳转，避免重复点击"
+        examples:
+          - input: "学号 S001 + 5 题 config（总时长 5 分钟）"
+            expected: "页面显示『欢迎，S001 / 认知记忆测评 v1 / 5 题 / 预计 5 分钟』"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["2.1"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "2.3"
+    title: "单选题渲染与作答（同屏 + 分阶段模式）"
+    repository_type: monolith
+    estimated_complexity: high
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "同屏模式：题干 + 选项同屏，单倒计时"
+        scenario:
+          given: "当前题为 type=single, mode=all_in_one, durationMs=30000"
+          when: "页面进入"
+          then:
+            - "顶部进度条从 100% 起始按 30 秒倒计时线性递减"
+            - "题干区显示文字（或图片或混合）"
+            - "选项区显示 N 个选项（每行 2 或 3 个，由选项总数自动决定）"
+            - "学生点击某选项后该选项呈选中态，其他取消"
+            - "学生点击『提交』后立即记录答案、得分并写入结果文件"
+            - "倒计时归零仍未提交则记『未作答』并写入结果文件，自动进入下一题"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "选项渲染规则: 总数 ≤ 4 → 每行 2 个；5-9 → 每行 3 个；> 9 → 每行 3 个并垂直滚动"
+          - id: "BR-1.2"
+            rule: "单选题选中是排他的；切换选项不重置倒计时"
+          - id: "BR-1.3"
+            rule: "得分 = 该选项在 score 数组中的对应值"
+          - id: "BR-1.4"
+            rule: "倒计时进度条颜色保持 Primary 蓝；剩余 ≤ 5 秒变橙；不弹任何提示"
+        data_validation:
+          - field: "学生答案 answer"
+            type: "number"
+            required: false
+            rules: "1-N 之间的整数（N 为选项数），未作答时为空字符串"
+            error_message: "（内部错误，不暴露给用户）"
+        error_handling:
+          - scenario: "结果写入失败"
+            code: "RESULT_WRITE_FAILED"
+            message: "数据保存失败，请联系研究员"
+            action: "阻塞下一题跳转，展示重试按钮（再次写入），重试 3 次仍失败则展示终止页"
+        interaction:
+          - trigger: "页面进入"
+            behavior: "倒计时立即开始；提交按钮置灰直到至少选中一个选项"
+          - trigger: "选项点击"
+            behavior: "选中态动画（背景色淡入 100ms）；提交按钮可用"
+          - trigger: "倒计时 ≤ 5 秒"
+            behavior: "进度条颜色变橙，无音效"
+          - trigger: "提交或超时"
+            behavior: "立即跳转下一题，无确认弹窗"
+        examples:
+          - input: "30s 内选中选项 2 后提交"
+            expected: "结果记录: answer=2, score={score[1]}, optionsMs=实际用时, status=done"
+          - input: "30s 倒计时归零未提交"
+            expected: "结果记录: answer=, score=0, optionsMs=30000, status=not_answered"
+
+      - id: AC2
+        title: "分阶段模式：题干阶段独立倒计时，超时自动进入选项阶段"
+        scenario:
+          given: "当前题为 type=single, mode=staged, stemDurationMs=10000, optionsDurationMs=20000"
+          when: "页面进入"
+          then:
+            - "首先显示题干阶段：顶部进度条按 10 秒倒计时；屏幕仅显示题干，无选项"
+            - "题干阶段无任何作答按钮，学生点击屏幕无反应（但不报错）"
+            - "10 秒倒计时归零自动进入选项阶段（这是正常流转，不是异常）"
+            - "选项阶段显示选项 + 提交按钮 + 新的 20 秒倒计时进度条；题干已隐藏"
+            - "选项阶段提交或超时后写入结果，自动进入下一题"
+        business_rules:
+          - id: "BR-2.1"
+            rule: "题干阶段无任何用户作答动作；题干阶段超时是『正常流转』，不记为错误也不影响后续选项阶段"
+          - id: "BR-2.2"
+            rule: "题干阶段实际用时固定为 stemDurationMs（即倒计时全程）；记录到 stemMs 字段"
+          - id: "BR-2.3"
+            rule: "选项阶段实际用时为学生进入选项阶段到提交/超时的耗时；记录到 optionsMs 字段"
+          - id: "BR-2.4"
+            rule: "若学生在选项阶段未作答且超时，记 status=not_answered；得分为 0"
+        error_handling:
+          - scenario: "题干阶段任意异常（如系统中断 ANR）"
+            code: "STAGE_TRANSITION_FAILED"
+            message: "数据保存失败，请联系研究员"
+            action: "整题作废，记录 status=error，写入结果后跳过到下一题"
+        interaction:
+          - trigger: "题干阶段点击"
+            behavior: "无视觉反馈，无错误提示（学生可能误操作，静默忽略）"
+          - trigger: "题干阶段倒计时归零"
+            behavior: "题干区淡出 200ms，选项区淡入 200ms，新进度条从 100% 起始"
+          - trigger: "选项阶段提交或超时"
+            behavior: "立即写入结果并跳转下一题"
+        examples:
+          - input: "题干 10s + 选项 20s，学生在选项阶段第 8s 选中并提交"
+            expected: "结果记录: stemMs=10000, optionsMs=8000, answer=X, score=Y, status=done"
+          - input: "题干 10s + 选项 20s，学生选项阶段未作答超时"
+            expected: "结果记录: stemMs=10000, optionsMs=20000, answer=, score=0, status=not_answered"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["2.2", "1.3"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "2.4"
+    title: "多选题渲染与作答（同屏 + 分阶段模式）"
+    repository_type: monolith
+    estimated_complexity: medium
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "多选题选项可勾选/取消，得分按选项独立计算"
+        scenario:
+          given: "当前题为 type=multi, mode=all_in_one, durationMs=30000"
+          when: "页面进入"
+          then:
+            - "题干 + 选项同屏渲染，倒计时开始"
+            - "学生可点击多个选项进行勾选；再次点击取消勾选"
+            - "提交按钮置灰直到至少勾选一个选项"
+            - "提交时记录已勾选选项序号集合，得分 = 各选中选项 score 之和"
+            - "倒计时归零未提交则记 not_answered"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "多选题不要求学生选择正确数量；只要勾选 ≥ 1 项即可提交"
+          - id: "BR-1.2"
+            rule: "正确答案集合用于评分对照（写入结果文件 correct 字段），但不向学生展示对错"
+          - id: "BR-1.3"
+            rule: "得分 = sum(score[i] for i in selected)"
+          - id: "BR-1.4"
+            rule: "选项渲染规则与单选题一致（每行 2 或 3 个）"
+          - id: "BR-1.5"
+            rule: "分阶段模式与 Story 2.3 AC2 完全一致（题干阶段超时自动进入选项阶段）"
+        data_validation:
+          - field: "学生答案 answer"
+            type: "string"
+            required: false
+            rules: "逗号分隔的选项序号集合，如 '1,3,4'；未作答时为空字符串"
+            error_message: "（内部错误，不暴露给用户）"
+        error_handling:
+          - scenario: "结果写入失败"
+            code: "RESULT_WRITE_FAILED"
+            message: "数据保存失败，请联系研究员"
+            action: "同 Story 2.3，重试 3 次后展示终止页"
+        interaction:
+          - trigger: "选项点击"
+            behavior: "切换勾选态（背景色 + 复选标记），不互斥"
+          - trigger: "勾选数从 0 变 1"
+            behavior: "提交按钮启用"
+          - trigger: "勾选数从 1 变 0"
+            behavior: "提交按钮置灰"
+        examples:
+          - input: "选中选项 1 和 3，提交"
+            expected: "answer='1,3', score=score[0]+score[2]"
+          - input: "未勾选任何选项直至超时"
+            expected: "answer='', status=not_answered, score=0"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["2.3"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "2.5"
+    title: "结果文件实时落盘（命名 + 字段 + 原子追加）"
+    repository_type: monolith
+    estimated_complexity: high
+    priority: P0
+    acceptance_criteria:
+      - id: AC1
+        title: "结果文件按规范命名并在首次写入时创建 header"
+        scenario:
+          given: "学生在欢迎页点击『开始答题』触发 ResultRepository.startSession()"
+          when: "首次写入第一题结果"
+          then:
+            - "若结果文件不存在则创建：/sdcard/WenJuanPro/results/{deviceId}_{studentId}_{configId}_{yyyyMMdd-HHmmss}.txt"
+            - "deviceId = Settings.Secure.ANDROID_ID（无法读取时阻塞会话）"
+            - "configId 取自 config 文件 header 或文件名"
+            - "时间戳取『开始答题』点击的瞬时时间"
+            - "首行写入 header 元数据：deviceId / studentId / configId / sessionStart / appVersion"
+            - "header 后写入分隔行 ---"
+            - "随后开始追加每题/每阶段记录行"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "header 格式（key:value 行）: deviceId、studentId、configId、sessionStart、appVersion"
+          - id: "BR-1.2"
+            rule: "追加每行的字段（管道分隔）: qid|type|mode|stemMs|optionsMs|answer|correct|score|status"
+            "stemMs 仅 staged 模式有值；all_in_one 模式写 -"
+          - id: "BR-1.3"
+            rule: "status 枚举: done | not_answered | partial | error"
+            "partial 仅在 staged 模式题干阶段已写入但选项阶段未完成时使用"
+          - id: "BR-1.4"
+            rule: "写入策略: 整行 append + flush + fsync；先组好整行再写，避免半行破坏"
+          - id: "BR-1.5"
+            rule: "在 staged 模式下，题干阶段结束（自动进入选项阶段）时不立即写一行；只有题目完整结束（选项阶段提交/超时/异常）才写一行；这避免续答时需要合并 partial 行"
+            "（注：本规则使续答状态判定简化为按 qid 是否存在判定；半完成题不会落到结果文件中）"
+          - id: "BR-1.6"
+            rule: "若 BR-1.5 之外发生 App 崩溃导致选项阶段未写入，则下次续答时该 qid 视为未完成（整题重做，符合 Q4 决策）"
+        data_validation:
+          - field: "deviceId"
+            type: "string"
+            required: true
+            rules: "Settings.Secure.ANDROID_ID 返回值；非空"
+            error_message: "无法读取设备 ID"
+        error_handling:
+          - scenario: "目录不存在"
+            code: "RESULT_DIR_MISSING"
+            message: "结果目录不存在，已自动创建"
+            action: "自动 mkdirs，继续写入"
+          - scenario: "写入失败（磁盘满 / 权限丢失）"
+            code: "RESULT_WRITE_FAILED"
+            message: "数据保存失败，请联系研究员"
+            action: "Story 2.3 AC1 已定义重试策略"
+          - scenario: "fsync 失败"
+            code: "FSYNC_FAILED"
+            message: "数据落盘失败"
+            action: "记录 .diag 日志，向上抛出 RESULT_WRITE_FAILED"
+        examples:
+          - input: "deviceId=abc123, studentId=S001, configId=cog-mem-2026q3, 开始时间 2026-04-17 10:30:45"
+            expected: |
+              文件名: abc123_S001_cog-mem-2026q3_20260417-103045.txt
+              文件内容首段:
+                deviceId: abc123
+                studentId: S001
+                configId: cog-mem-2026q3
+                sessionStart: 20260417-103045
+                appVersion: 0.1.0
+                ---
+          - input: "Q1 同屏模式答完: answer=2, correct=1, score=0, optionsMs=24530"
+            expected: "追加行: Q1|single|all_in_one|-|24530|2|1|0|done"
+          - input: "Q2 分阶段模式: stemMs=10000, optionsMs=8420, answer=1,3, correct=1,2, score=1, status=done"
+            expected: "追加行: Q2|multi|staged|10000|8420|1,3|1,2|1|done"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["2.2"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null
+
+  - id: "2.6"
+    title: "完成页"
+    repository_type: monolith
+    estimated_complexity: low
+    priority: P1
+    acceptance_criteria:
+      - id: AC1
+        title: "所有题目完成后展示完成页"
+        scenario:
+          given: "最后一题完成（提交或超时）"
+          when: "结果写入成功"
+          then:
+            - "导航到完成页，展示『测评已完成，请将设备交还研究员』"
+            - "页面无『重新开始』按钮，无成绩反馈"
+            - "30 秒后自动返回测评集选择页（避免学生忘记归还设备时占用界面）"
+        business_rules:
+          - id: "BR-1.1"
+            rule: "完成页停留期间禁止返回作答页（系统返回键被消费）"
+          - id: "BR-1.2"
+            rule: "30 秒倒计时不可见，避免学生误以为是新一轮答题"
+        error_handling:
+          - scenario: "返回测评集选择页时 config 已被研究员替换"
+            code: "CONFIG_CHANGED"
+            message: "（无需提示，正常刷新即可）"
+            action: "重新扫描 config 目录"
+        interaction:
+          - trigger: "进入完成页"
+            behavior: "淡入 300ms"
+          - trigger: "30 秒后"
+            behavior: "自动返回测评集选择页，无动画"
+        examples:
+          - input: "Q5（最后一题）写入成功"
+            expected: "完成页 + 30s 自动返回首页"
+    provides_apis: []
+    consumes_apis: []
+    dependencies: ["2.5"]
+    sm_hints:
+      front_end_spec: null
+      architecture: null

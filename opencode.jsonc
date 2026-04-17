@@ -1,0 +1,12 @@
+{
+  "mcp": {
+    "orchestrix": {
+      "type": "remote",
+      "url": "https://orchestrix-mcp.youlidao.ai/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer orch_188b274c879a729353bd9161e54da2af"
+      }
+    }
+  }
+}
