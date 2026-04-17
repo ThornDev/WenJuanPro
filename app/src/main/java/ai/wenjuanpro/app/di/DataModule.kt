@@ -12,7 +12,7 @@ import ai.wenjuanpro.app.data.permission.CameraPermissionRepository
 import ai.wenjuanpro.app.data.permission.CameraPermissionRepositoryImpl
 import ai.wenjuanpro.app.data.permission.PermissionRepository
 import ai.wenjuanpro.app.data.permission.PermissionRepositoryImpl
-import ai.wenjuanpro.app.data.result.NoopResultRepository
+import ai.wenjuanpro.app.data.result.InMemoryResultRepository
 import ai.wenjuanpro.app.data.result.ResultRepository
 import dagger.Binds
 import dagger.Module
@@ -47,7 +47,7 @@ abstract class DataModule {
 
     @Binds
     @Singleton
-    abstract fun bindResultRepository(impl: NoopResultRepository): ResultRepository
+    abstract fun bindResultRepository(impl: InMemoryResultRepository): ResultRepository
 
     @Binds
     @Singleton

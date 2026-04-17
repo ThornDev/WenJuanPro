@@ -53,4 +53,11 @@
     <string name="welcome_ssaid_error_title">无法读取设备 ID，请联系研究员</string>
     <string name="welcome_ssaid_retry">重试读取设备 ID</string>
     <string name="welcome_config_missing_title">未找到对应的测评配置，请返回重新选择</string>
+
+    <string name="question_submit_button">提交</string>
+    <string name="question_error_result_write_failed">数据保存失败，请联系研究员</string>
+    <string name="question_retry_button">重试</string>
+    <string name="question_stem_phase_hint">仅阅读</string>
+    <string name="question_options_phase_hint">请作答</string>
+    <string name="question_progress_counter_format">第 %1$d / %2$d 题</string>
 </resources>

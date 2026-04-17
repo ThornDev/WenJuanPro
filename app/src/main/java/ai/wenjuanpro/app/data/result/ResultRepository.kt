@@ -1,5 +1,8 @@
 package ai.wenjuanpro.app.data.result
 
+import ai.wenjuanpro.app.domain.model.ResultRecord
+import ai.wenjuanpro.app.domain.model.Session
+
 interface ResultRepository {
     suspend fun startSession(
         deviceId: String,
@@ -14,6 +17,15 @@ interface ResultRepository {
         configId: String,
         totalQuestions: Int,
     ): Boolean
+
+    suspend fun openSession(session: Session)
+
+    suspend fun append(record: ResultRecord): Result<Unit>
+
+    suspend fun findResumable(
+        studentId: String,
+        configId: String,
+    ): ResumeCandidate?
 }
 
 sealed interface StartSessionResult {
@@ -21,3 +33,8 @@ sealed interface StartSessionResult {
 
     data class Failure(val code: String) : StartSessionResult
 }
+
+data class ResumeCandidate(
+    val sessionFileName: String,
+    val completedQids: Set<String>,
+)

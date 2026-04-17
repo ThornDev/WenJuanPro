@@ -2,6 +2,7 @@ package ai.wenjuanpro.app.ui
 
 import ai.wenjuanpro.app.ui.screens.configlist.ConfigListScreen
 import ai.wenjuanpro.app.ui.screens.permission.PermissionScreen
+import ai.wenjuanpro.app.ui.screens.question.QuestionScreen
 import ai.wenjuanpro.app.ui.screens.scan.ScanScreen
 import ai.wenjuanpro.app.ui.screens.welcome.WelcomeConfirmScreen
 import androidx.compose.material3.Text
@@ -21,6 +22,7 @@ object NavRoutes {
     const val WELCOME = "welcome?studentId={studentId}&configId={configId}"
     const val QUESTION = "question?studentId={studentId}&configId={configId}"
     const val RESUME = "resume?studentId={studentId}&configId={configId}"
+    const val COMPLETE = "complete"
 }
 
 @Composable
@@ -113,7 +115,31 @@ fun WenJuanProNavHost(navController: NavHostController = rememberNavController()
                     navArgument("configId") { type = NavType.StringType },
                 ),
         ) {
-            Text("Story 2.3/2.4 will implement this")
+            QuestionScreen(
+                onNavigateNext = { studentId, configId ->
+                    navController.navigate(
+                        "question?studentId=$studentId&configId=$configId",
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateComplete = {
+                    navController.navigate(NavRoutes.COMPLETE) {
+                        popUpTo(NavRoutes.PERMISSION) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateTerminal = {
+                    Timber.w("question terminal route not yet implemented; falling back to complete")
+                    navController.navigate(NavRoutes.COMPLETE) {
+                        popUpTo(NavRoutes.PERMISSION) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+        composable(NavRoutes.COMPLETE) {
+            Text("Story 2.6 will implement this")
         }
         composable(
             "resume?studentId={studentId}&configId={configId}",
