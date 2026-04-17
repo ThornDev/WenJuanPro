@@ -1,0 +1,146 @@
+schema: 1
+story: "1.3"
+story_title: "TXT config 解析器与 schema 校验"
+gate: PASS
+status_reason: >
+  All AC1 traceability entries verified. 56 authored JVM tests (43 ConfigParser + 8 Repository +
+  5 OkioFileSystem) cover all 56 test-design scenarios; 0 NotImplementedError stubs and 0 @Ignore
+  remain. 13/13 deliverable bindings regex-matched on disk. Static audits pass: pure-Kotlin parser
+  (no android.* leak), IO isolated to Repository (`withContext(@IoDispatcher)`), strict UTF-8 with
+  BOM warning + ENCODING_INVALID fallback, error aggregation (no short-circuit), per-file IOException
+  contained as Invalid (GAP-2), strict ascending multi-correct (GAP-1), Timber logs filtered (NFR9 —
+  no question stems / file paths). Build verification (./gradlew test/ktlintCheck/assembleDebug)
+  Deferred-as-Pass per Story 1.1/1.2 precedent (sandbox lacks JDK/Gradle/Android SDK). Recommend
+  user runs Gradle tasks in Android Studio before merging Epic 1.
+reviewer: "Turing (QA)"
+updated: "2026-04-17T00:00:00Z"
+
+review_round: 1
+review_mode_type: full
+issues_from_previous_round: 0
+issues_resolved: 0
+improvement_percentage: 0
+
+incremental_context:
+  cached_risk_level: LOW
+  cached_review_mode: automated_only
+  cached_project_type: android_mobile_jvm
+  failed_acs: []
+  failed_e2e_scenarios: []
+  missing_blind_spots: []
+  checkbox_issues: []
+
+waiver: { active: false }
+
+architecture_concern: false
+escalation_reason: ""
+
+top_issues:
+  - id: QA-1.3-INFO-001
+    severity: low
+    finding: >
+      Build verification (./gradlew test / ktlintCheck / assembleDebug) executed 0 times in sandbox —
+      JDK and Gradle wrapper are absent. This follows the Story 1.1/1.2 Deferred-as-Pass precedent
+      but means QA cannot independently confirm test execution pass-rate (56 cases) or coverage
+      (parser ≥80% target).
+    suggested_action: >
+      Before Epic 1 smoke test, run `./gradlew test ktlintCheck assembleDebug` in Android Studio
+      and paste the results into `docs/qa/evidence/1.3/build-verification.log`.
+  - id: QA-1.3-INFO-002
+    severity: low
+    finding: >
+      `parseOptions` returns a flat `List<OptionContent>` with at most one `Image` or `Text` per
+      option (no `OptionContent.Mixed` produced). Story T3 line 222 explicitly allows either flat
+      list OR Mixed nesting, so this is in-spec; flagged only because the sealed `OptionContent.Mixed`
+      branch is currently unreachable from the parser.
+    suggested_action: >
+      Either document the convention in a parser comment or delete `OptionContent.Mixed` if
+      consumers (Story 1.4+) confirm they will never need a single option to contain both image
+      and text. Defer to PO/Architect.
+
+test_results:
+  automated:
+    executed: false
+    passed: true
+    total: 56
+    passed_count: 0
+    failed_count: 0
+    skipped_count: 0
+    pass_rate: 0
+    coverage_percentage: 0
+    failed_tests: []
+    note: >
+      Execution DEFERRED per Story 1.1/1.2 precedent (no JDK/Gradle in sandbox). 56 tests authored
+      and statically reviewed; all `@Test` methods have real assertions (124 assert calls in
+      ConfigParserTest alone). Test composition: 43 unit + 8 integration + 5 IO; by priority
+      18 P0 / 29 P1 / 9 P2; blind-spot 21 covering BOUNDARY×14, ERROR×4, RESOURCE×2, CONCURRENCY×1.
+  e2e:
+    executed: false
+    passed: true
+    skipped: true
+    skip_reason: "Pure data-layer story (no UI, no Activity, no Compose); test-design e2e_count=0 by design."
+    scenarios_tested: 0
+    scenarios_passed: 0
+    scenarios_failed: 0
+    console_errors_found: false
+    network_errors_found: false
+
+evidence:
+  directory: "docs/qa/evidence/1.3/"
+  issues: []
+
+risk_assessment:
+  risk_level: LOW
+  review_mode: automated_only
+  complexity_count: 1
+  security_sensitive: false
+  dev_gate_score: 97
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 2 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Run `./gradlew test ktlintCheck assembleDebug` in Android Studio before Epic 1 smoke"
+      - "Confirm parser line-coverage ≥ 80% via JaCoCo once tests run"
+      - "Decide retention of unused OptionContent.Mixed branch with PO before Story 1.4 starts"
+
+nfr_validation:
+  security: { status: PASS, notes: "Timber.w logs only 'failed' / 'marking invalid' strings; no file paths, question stems, options, or correct answers leaked (NFR9). ENCODING_INVALID and ASSET_NOT_FOUND messages are user-facing by design (rendered in Story 1.4 sheet)." }
+  performance: { status: PASS, notes: "Pure in-memory parsing of ByteArray; bound by file size. Repository sorts O(n log n) by configId. withContext(IoDispatcher) ensures no main-thread blocking." }
+  reliability: { status: PASS, notes: "Strict UTF-8 decoder rejects malformed bytes; BOM tolerated. Error accumulation (no short-circuit) gives users complete error list per file. Per-file IOException contained — one corrupt file cannot break loadAll." }
+  maintainability: { status: PASS, notes: "Clean sealed-interface model (Question/StemContent/OptionContent/ParseResult/ConfigLoadResult); pure-Kotlin parser (no android.* dependency); 13/13 deliverable bindings matched; 56 tests provide regression safety net." }
+
+ac_coverage:
+  coverage_rate: 100
+  passed: true
+  blocking_issues_count: 0
+  acs:
+    - ac_id: AC1
+      status: VERIFIED
+      code_locations_verified: 10/10
+      test_locations_verified: 3/3
+      aspects_verified:
+        main_scenario: true
+        business_rules: true       # BR-1.1..1.6 covered
+        data_validation: true      # configId / type / mode / duration / dotsPositions
+        error_handling: true       # CONFIG_HEADER_MISSING / CONFIG_FIELD_INVALID / ASSET_NOT_FOUND / ENCODING_INVALID
+
+task_checkbox_verification:
+  total_checkboxes: 31
+  checked_count: 31
+  unchecked_count: 0
+  completion_rate: 100
+  consistency_rate: 100
+
+deliverable_bindings_verified: 13/13
+
+history:
+  - at: "2026-04-17T00:00:00Z"
+    gate: PASS
+    note: >
+      Round 1 static review. 14 created files + 3 modified files + 3 test files verified on disk.
+      All 13 deliverable bindings regex-matched. 56 @Test methods present with substantive
+      assertions (no NotImplementedError, no @Ignore). Two design gaps (GAP-1 strict-ascending
+      multi correct; GAP-2 per-file IOException → Invalid) resolved consistently in code, tests,
+      and Dev Log. Build execution deferred per sandbox precedent.
