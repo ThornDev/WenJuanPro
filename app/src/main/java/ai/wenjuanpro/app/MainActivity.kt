@@ -1,10 +1,10 @@
 package ai.wenjuanpro.app
 
+import ai.wenjuanpro.app.ui.WenJuanProNavHost
+import ai.wenjuanpro.app.ui.theme.WenJuanProTheme
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import ai.wenjuanpro.app.ui.WenJuanProHomeScreen
-import ai.wenjuanpro.app.ui.theme.WenJuanProTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             WenJuanProTheme {
-                WenJuanProHomeScreen()
+                WenJuanProNavHost()
             }
         }
     }

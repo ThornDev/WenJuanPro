@@ -1,4 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">WenJuanPro</string>
+
+    <string name="permission_title">需要『全部文件访问』权限</string>
+    <string name="permission_description">WenJuanPro 需要读取 /sdcard/WenJuanPro/config/ 下的题库并将答题结果写入 /sdcard/WenJuanPro/results/。请前往系统设置开启『所有文件访问』权限。</string>
+    <string name="permission_button_open_settings">前往系统设置授权</string>
+    <string name="permission_button_open_settings_retry">再次前往系统设置</string>
+    <string name="permission_button_recheck">已完成授权，重新检测</string>
+    <string name="permission_fallback_instruction">无法自动跳转。请手动前往：设置 → 应用 → WenJuanPro → 权限 → 全部文件访问。</string>
+    <string name="permission_fallback_path">设置 → 应用 → WenJuanPro → 权限 → 全部文件访问</string>
+    <string name="permission_fallback_copy_button">复制路径</string>
+    <string name="permission_fallback_copy_label">WenJuanPro permission path</string>
+    <string name="permission_fallback_copied">已复制到剪贴板</string>
+    <string name="permission_intent_unavailable_toast">当前设备无法自动跳转到授权页面，请按页面指引手动操作。</string>
+    <string name="permission_icon_cd">存储权限图标</string>
+
+    <string name="config_list_title">请选择测评集</string>
+    <string name="config_list_refresh_cd">刷新</string>
+    <string name="config_list_status_valid">有效</string>
+    <string name="config_list_status_invalid">损坏</string>
+    <string name="config_list_question_count">%1$d 题</string>
+    <string name="config_list_question_count_unknown">? 题</string>
+    <string name="config_list_view_errors">查看错误详情</string>
+    <string name="config_list_empty_title">请将 config TXT 文件放入 /sdcard/WenJuanPro/config/ 后点击刷新</string>
+    <string name="config_list_timeout_title">扫描题库超时，请检查目录是否存在大量文件</string>
+    <string name="config_list_error_title">扫描题库失败，请重试</string>
+    <string name="config_list_retry_button">重试</string>
+    <string name="config_list_refresh_button">刷新</string>
+    <string name="config_list_all_invalid_banner">当前无可用测评集</string>
+    <string name="config_list_error_sheet_title">配置错误详情</string>
+    <string name="config_list_error_sheet_close_cd">关闭</string>
+    <string name="config_list_error_row_format">第 %1$d 行 · %2$s · %3$s</string>
+    <string name="config_list_error_field_placeholder">—</string>
+
+    <string name="scan_top_hint">请将二维码对准取景框</string>
+    <string name="scan_bottom_hint">识别后将自动跳转</string>
+    <string name="scan_invalid_id_format">学号格式非法：%1$s</string>
+    <string name="scan_permission_denied_title">未获取摄像头权限，无法扫码登录</string>
+    <string name="scan_permission_denied_retry">重新申请权限</string>
+    <string name="scan_permission_denied_open_settings">前往系统设置</string>
+    <string name="scan_no_camera_title">未检测到摄像头，无法扫码登录</string>
+    <string name="scan_no_camera_back">返回</string>
+    <string name="scan_camera_bind_failed">摄像头被占用或初始化失败，请重试</string>
+    <string name="scan_camera_bind_failed_retry">重试</string>
+    <string name="scan_back_cd">返回</string>
+
+    <string name="welcome_greeting">欢迎，%1$s</string>
+    <string name="welcome_title_label">测评名称：%1$s</string>
+    <string name="welcome_question_count">题目总数：%1$d 题</string>
+    <string name="welcome_eta_minutes">预计用时：%1$d 分钟</string>
+    <string name="welcome_start_button">开始答题</string>
+    <string name="welcome_ssaid_error_title">无法读取设备 ID，请联系研究员</string>
+    <string name="welcome_ssaid_retry">重试读取设备 ID</string>
+    <string name="welcome_config_missing_title">未找到对应的测评配置，请返回重新选择</string>
 </resources>

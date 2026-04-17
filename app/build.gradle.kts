@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.compose.bom))
@@ -93,6 +94,7 @@ dependencies {
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons.core)
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)
@@ -106,6 +108,14 @@ dependencies {
 
     implementation(libs.timber)
 
+    implementation(libs.okio)
+
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.zxing.android.embedded)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.robolectric)
@@ -118,5 +128,6 @@ dependencies {
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.androidx.navigation.testing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
