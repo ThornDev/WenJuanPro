@@ -452,4 +452,46 @@ class QuestionFsmTest {
         assertEquals(seq, s.flashSequence)
         assertEquals(q, s.question)
     }
+
+    // ── Story 3.3: Recall ──
+
+    @Test
+    fun `3_3-UNIT-009 RecallTap appends to selectedSequence`() {
+        val q = memoryQuestion()
+        val recalling = QuestionFsmState.MemoryRecalling(
+            question = q,
+            flashSequence = listOf(7, 3, 44, 19, 58, 12, 30, 22, 37, 51),
+        )
+        val s = fsm.reduce(recalling, QuestionEvent.RecallTap(7), 0L)
+        assertTrue(s is QuestionFsmState.MemoryRecalling)
+        assertEquals(listOf(7), (s as QuestionFsmState.MemoryRecalling).selectedSequence)
+    }
+
+    @Test
+    fun `3_3-UNIT-009b RecallTap on already selected dot is ignored`() {
+        val q = memoryQuestion()
+        val recalling = QuestionFsmState.MemoryRecalling(
+            question = q,
+            flashSequence = listOf(7, 3),
+            selectedSequence = listOf(7),
+        )
+        val s = fsm.reduce(recalling, QuestionEvent.RecallTap(7), 0L)
+        assertEquals(listOf(7), (s as QuestionFsmState.MemoryRecalling).selectedSequence)
+    }
+
+    @Test
+    fun `3_3-UNIT-011 RecallTap accumulates sequence`() {
+        val q = memoryQuestion()
+        var state: QuestionFsmState = QuestionFsmState.MemoryRecalling(
+            question = q,
+            flashSequence = listOf(7, 3, 44),
+        )
+        state = fsm.reduce(state, QuestionEvent.RecallTap(7), 0L)
+        state = fsm.reduce(state, QuestionEvent.RecallTap(3), 0L)
+        state = fsm.reduce(state, QuestionEvent.RecallTap(44), 0L)
+        assertEquals(
+            listOf(7, 3, 44),
+            (state as QuestionFsmState.MemoryRecalling).selectedSequence,
+        )
+    }
 }

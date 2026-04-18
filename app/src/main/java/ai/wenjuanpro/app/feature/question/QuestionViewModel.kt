@@ -15,6 +15,7 @@ import ai.wenjuanpro.app.ui.components.DotState
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
 import ai.wenjuanpro.app.domain.usecase.FlashSequenceGenerator
+import ai.wenjuanpro.app.domain.usecase.ScoreMemoryUseCase
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -47,6 +48,7 @@ class QuestionViewModel
         private val startSessionUseCase: StartSessionUseCase,
         private val appendResultUseCase: AppendResultUseCase,
         private val flashSequenceGenerator: FlashSequenceGenerator,
+        private val scoreMemoryUseCase: ScoreMemoryUseCase,
         private val questionFsm: QuestionFsm,
         private val clock: Clock,
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -86,9 +88,9 @@ class QuestionViewModel
                 QuestionIntent.TimerExpired -> handleTimerExpired()
                 QuestionIntent.StageTransition -> handleStageTransition()
                 QuestionIntent.Retry -> handleRetry()
-                QuestionIntent.FlashComplete -> throw NotImplementedError("Story 3.2")
-                is QuestionIntent.RecallTap -> throw NotImplementedError("Story 3.3")
-                QuestionIntent.RecallTimeout -> throw NotImplementedError("Story 3.3")
+                QuestionIntent.FlashComplete -> { /* handled by flash coroutine */ }
+                is QuestionIntent.RecallTap -> handleRecallTap(intent.gridIndex)
+                QuestionIntent.RecallTimeout -> handleRecallTimeout()
             }
         }
 
@@ -253,6 +255,9 @@ class QuestionViewModel
                     renderUiFromFsm(clock.nowMs())
                     startCountdownForCurrentStage()
                 }
+                is QuestionFsmState.MemoryRecalling -> {
+                    handleRecallTimeout()
+                }
                 else -> Unit
             }
         }
@@ -268,6 +273,37 @@ class QuestionViewModel
             fsmState = questionFsm.reduce(current, QuestionEvent.StemTimeout, clock.nowMs())
             renderUiFromFsm(clock.nowMs())
             startCountdownForCurrentStage()
+        }
+
+        private fun handleRecallTap(gridIndex: Int) {
+            val current = fsmState
+            if (current !is QuestionFsmState.MemoryRecalling) return
+            fsmState = questionFsm.reduce(current, QuestionEvent.RecallTap(gridIndex), clock.nowMs())
+            renderUiFromFsm(clock.nowMs())
+            val updated = fsmState as? QuestionFsmState.MemoryRecalling ?: return
+            if (updated.selectedSequence.size >= current.question.dotsPositions.size) {
+                cancelCountdown()
+                finishMemoryRecall(updated)
+            }
+        }
+
+        private fun handleRecallTimeout() {
+            val current = fsmState
+            if (current !is QuestionFsmState.MemoryRecalling) return
+            cancelCountdown()
+            finishMemoryRecall(current)
+        }
+
+        private fun finishMemoryRecall(state: QuestionFsmState.MemoryRecalling) {
+            val optionsMs = clock.nowMs() - state.stageEnteredMs
+            val record = scoreMemoryUseCase(
+                question = state.question,
+                answer = state.selectedSequence,
+                expected = state.flashSequence,
+                optionsMs = optionsMs,
+            )
+            fsmState = QuestionFsmState.Writing(record = record, retriesLeft = 3)
+            persistWriting()
         }
 
         private fun startFlashSequenceAfterDelay(question: Question.Memory) {
@@ -298,7 +334,13 @@ class QuestionViewModel
                     fsmState = questionFsm.reduce(
                         fsmState, QuestionEvent.FlashComplete, clock.nowMs(),
                     )
+                    // Set stageEnteredMs for countdown in Recalling phase
+                    val recalling = fsmState as? QuestionFsmState.MemoryRecalling
+                    if (recalling != null) {
+                        fsmState = recalling.copy(stageEnteredMs = clock.nowMs())
+                    }
                     renderUiFromFsm(clock.nowMs())
+                    startCountdownForCurrentStage()
                 } catch (e: Exception) {
                     if (e is kotlinx.coroutines.CancellationException) throw e
                     Timber.w("flash sequence failed; qid=${question.qid} error=${e.message}")
@@ -538,15 +580,29 @@ class QuestionViewModel
                     }
                     is QuestionFsmState.MemoryRecalling -> {
                         val positions = state.question.dotsPositions
+                        val selectedSet = state.selectedSequence.toSet()
                         val dotStates = List(64) { index ->
-                            if (index in positions) DotState.BLUE else DotState.EMPTY
+                            when {
+                                index in selectedSet -> DotState.SELECTED
+                                index in positions -> DotState.BLUE
+                                else -> DotState.EMPTY
+                            }
                         }
+                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val elapsed = if (state.stageEnteredMs > 0L) {
+                            (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        } else {
+                            0L
+                        }
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress = (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.Memory(
                             dotsPositions = positions,
                             dotStates = dotStates,
                             phase = MemoryPhase.Recalling,
-                            countdownProgress = 1f,
-                            isWarning = false,
+                            selectedSequence = state.selectedSequence,
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
                     }
                     is QuestionFsmState.Writing -> _uiState.value
@@ -572,6 +628,8 @@ class QuestionViewModel
                     is QuestionFsmState.MultiStagedStem ->
                         s.stageEnteredMs to (s.question.stemDurationMs ?: 0L)
                     is QuestionFsmState.MultiStagedOptions ->
+                        s.stageEnteredMs to s.question.optionsDurationMs
+                    is QuestionFsmState.MemoryRecalling ->
                         s.stageEnteredMs to s.question.optionsDurationMs
                     else -> return
                 }

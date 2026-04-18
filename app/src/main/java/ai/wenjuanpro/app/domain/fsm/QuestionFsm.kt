@@ -76,6 +76,8 @@ sealed interface QuestionFsmState {
     data class MemoryRecalling(
         val question: Question.Memory,
         val flashSequence: List<Int>,
+        val selectedSequence: List<Int> = emptyList(),
+        val stageEnteredMs: Long = 0L,
     ) : QuestionFsmState
 }
 
@@ -111,6 +113,10 @@ sealed interface QuestionEvent {
     data class FlashTick(val nextIndex: Int) : QuestionEvent
 
     data object FlashComplete : QuestionEvent
+
+    data class RecallTap(val gridIndex: Int) : QuestionEvent
+
+    data object RecallTimeout : QuestionEvent
 }
 
 @Singleton
@@ -132,6 +138,8 @@ class QuestionFsm
                 is QuestionEvent.FlashStart -> onFlashStart(state, event.flashSequence)
                 is QuestionEvent.FlashTick -> onFlashTick(state, event.nextIndex)
                 QuestionEvent.FlashComplete -> onFlashComplete(state)
+                is QuestionEvent.RecallTap -> onRecallTap(state, event.gridIndex)
+                QuestionEvent.RecallTimeout -> onRecallTimeout(state)
                 is QuestionEvent.SelectOption -> onSelectOption(state, event.index)
                 is QuestionEvent.ToggleOption -> onToggleOption(state, event.index)
                 is QuestionEvent.OptionsSubmit -> onOptionsSubmit(state, event.index, nowMs)
@@ -179,6 +187,29 @@ class QuestionFsm
                         question = state.question,
                         flashSequence = state.flashSequence,
                     )
+                else -> state
+            }
+
+        private fun onRecallTap(
+            state: QuestionFsmState,
+            gridIndex: Int,
+        ): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.MemoryRecalling -> {
+                    if (gridIndex in state.selectedSequence) {
+                        state // already selected, ignore
+                    } else {
+                        state.copy(
+                            selectedSequence = state.selectedSequence + gridIndex,
+                        )
+                    }
+                }
+                else -> state
+            }
+
+        private fun onRecallTimeout(state: QuestionFsmState): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.MemoryRecalling -> state // ViewModel handles scoring + Writing
                 else -> state
             }
 

@@ -19,6 +19,7 @@ import ai.wenjuanpro.app.domain.model.StemContent
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
 import ai.wenjuanpro.app.domain.usecase.FlashSequenceGenerator
+import ai.wenjuanpro.app.domain.usecase.ScoreMemoryUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreMultiChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreSingleChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
@@ -159,6 +160,7 @@ class QuestionViewModelTest {
             startSessionUseCase = startSession,
             appendResultUseCase = append,
             flashSequenceGenerator = FlashSequenceGenerator(),
+            scoreMemoryUseCase = ScoreMemoryUseCase(),
             questionFsm = fsm,
             clock = clock,
             ioDispatcher = dispatcher,
