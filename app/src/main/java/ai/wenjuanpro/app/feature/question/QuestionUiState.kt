@@ -37,6 +37,31 @@ sealed interface QuestionUiState {
         override val isWarning: Boolean = false,
     ) : QuestionUiState
 
+    data class MultiChoiceAllInOne(
+        val qid: String,
+        val questionIndex: Int,
+        val totalQuestions: Int,
+        val stem: StemContent,
+        val options: List<OptionContent>,
+        val selectedIndices: Set<Int> = emptySet(),
+        val submitEnabled: Boolean = false,
+        override val countdownProgress: Float = 1f,
+        override val isWarning: Boolean = false,
+    ) : QuestionUiState
+
+    data class MultiChoiceStaged(
+        val qid: String,
+        val questionIndex: Int,
+        val totalQuestions: Int,
+        val stem: StemContent,
+        val options: List<OptionContent>,
+        val stage: Stage,
+        val selectedIndices: Set<Int> = emptySet(),
+        val submitEnabled: Boolean = false,
+        override val countdownProgress: Float = 1f,
+        override val isWarning: Boolean = false,
+    ) : QuestionUiState
+
     data class RetryWriteBanner(val retriesLeft: Int) : QuestionUiState {
         override val countdownProgress: Float = 0f
         override val isWarning: Boolean = false

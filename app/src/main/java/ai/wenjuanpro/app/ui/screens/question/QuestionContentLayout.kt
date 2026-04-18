@@ -116,6 +116,38 @@ fun OptionsGrid(
     }
 }
 
+@Composable
+fun MultiOptionsGrid(
+    options: List<OptionContent>,
+    selectedIndices: Set<Int>,
+    onToggle: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val columns = optionColumnsFor(options.size)
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .testTag(QuestionContentTags.OPTIONS_GRID)
+                .padding(horizontal = 4.dp),
+    ) {
+        itemsIndexed(options) { index, option ->
+            val display = displayOption(option)
+            OptionCard(
+                index = index + 1,
+                text = display.text,
+                imageAssetName = display.imageAssetName,
+                isSelected = (index + 1) in selectedIndices,
+                isMulti = true,
+                onClick = { onToggle(index + 1) },
+            )
+        }
+    }
+}
+
 private data class OptionDisplay(
     val text: String?,
     val imageAssetName: String?,

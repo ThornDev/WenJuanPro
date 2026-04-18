@@ -18,6 +18,7 @@ import ai.wenjuanpro.app.domain.model.Session
 import ai.wenjuanpro.app.domain.model.StemContent
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
+import ai.wenjuanpro.app.domain.usecase.ScoreMultiChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreSingleChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
 import androidx.lifecycle.SavedStateHandle
@@ -138,7 +139,7 @@ class QuestionViewModelTest {
     ): QuestionViewModel {
         coEvery { configRepo.loadAll() } returns listOf(ConfigLoadResult.Valid(cfg))
         val score = ScoreSingleChoiceUseCase()
-        val fsm = QuestionFsm(score)
+        val fsm = QuestionFsm(score, ScoreMultiChoiceUseCase())
         val startSession = StartSessionUseCase(deviceIdProvider, repo, dispatcher)
         val append = AppendResultUseCase(repo, dispatcher)
         val clock = object : Clock {
@@ -529,6 +530,142 @@ class QuestionViewModelTest {
             // VM enters Error or stays unchanged
             val s = vm.uiState.value
             assertNotNull(s)
+        }
+
+    // ------------------------------------------------------------------
+    // Story 2.4: Multi-choice
+    // ------------------------------------------------------------------
+
+    private fun multiQuestion(
+        qid: String = "Q1",
+        mode: PresentMode = PresentMode.ALL_IN_ONE,
+        stemMs: Long? = if (mode == PresentMode.STAGED) 10_000L else null,
+        optionsMs: Long = 30_000L,
+        scores: List<Int> = listOf(10, 5, 3, 2),
+        correctIndices: Set<Int> = setOf(1, 2),
+    ): Question.MultiChoice =
+        Question.MultiChoice(
+            qid = qid,
+            mode = mode,
+            stemDurationMs = stemMs,
+            optionsDurationMs = optionsMs,
+            stem = StemContent.Text("multi stem"),
+            options =
+                listOf(
+                    OptionContent.Text("A"),
+                    OptionContent.Text("B"),
+                    OptionContent.Text("C"),
+                    OptionContent.Text("D"),
+                ),
+            correctIndices = correctIndices,
+            scores = scores,
+        )
+
+    @Test
+    fun `2_4-UNIT-012 OnEnter MultiChoice bootstraps to MultiChoiceAllInOne`() =
+        runTest(dispatcher) {
+            val cfg = config(listOf(multiQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            assertTrue(
+                "expected MultiChoiceAllInOne got $state",
+                state is QuestionUiState.MultiChoiceAllInOne,
+            )
+            state as QuestionUiState.MultiChoiceAllInOne
+            assertTrue(state.selectedIndices.isEmpty())
+            assertFalse(state.submitEnabled)
+        }
+
+    @Test
+    fun `2_4-UNIT-013 ToggleOption + Submit writes correct multi record`() =
+        runTest(dispatcher) {
+            val cfg = config(listOf(multiQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            vm.onIntent(QuestionIntent.ToggleOption(2))
+            vm.onIntent(QuestionIntent.ToggleOption(3))
+            val state = vm.uiState.value as QuestionUiState.MultiChoiceAllInOne
+            assertEquals(setOf(2, 3), state.selectedIndices)
+            assertTrue(state.submitEnabled)
+            vm.onIntent(QuestionIntent.Submit)
+            advanceUntilIdle()
+            assertEquals(1, repo.records.size)
+            val record = repo.records.first()
+            assertEquals("2,3", record.answer)
+            assertEquals(8, record.score) // scores[1]+scores[2] = 5+3
+            assertEquals(ResultStatus.DONE, record.status)
+        }
+
+    @Test
+    fun `2_4-UNIT-014 ToggleOption toggles off to empty disables submit`() =
+        runTest(dispatcher) {
+            val cfg = config(listOf(multiQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            vm.onIntent(QuestionIntent.ToggleOption(1))
+            assertTrue((vm.uiState.value as QuestionUiState.MultiChoiceAllInOne).submitEnabled)
+            vm.onIntent(QuestionIntent.ToggleOption(1))
+            val state = vm.uiState.value as QuestionUiState.MultiChoiceAllInOne
+            assertTrue(state.selectedIndices.isEmpty())
+            assertFalse(state.submitEnabled)
+        }
+
+    @Test
+    fun `2_4-UNIT-015 multi TimerExpired writes NOT_ANSWERED`() =
+        runTest(dispatcher) {
+            val cfg = config(listOf(multiQuestion(optionsMs = 2_000L)))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            advanceTimeBy(2_100L)
+            advanceUntilIdle()
+            assertEquals(1, repo.records.size)
+            assertEquals(ResultStatus.NOT_ANSWERED, repo.records.first().status)
+            assertEquals("", repo.records.first().answer)
+        }
+
+    @Test
+    fun `2_4-UNIT-020 staged multi stem phase ignores ToggleOption and Submit`() =
+        runTest(dispatcher) {
+            val cfg =
+                config(listOf(multiQuestion(mode = PresentMode.STAGED, stemMs = 10_000L, optionsMs = 20_000L)))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val initial = vm.uiState.value
+            assertTrue(
+                "expected MultiChoiceStaged got $initial",
+                initial is QuestionUiState.MultiChoiceStaged,
+            )
+            assertEquals(QuestionUiState.Stage.STEM, (initial as QuestionUiState.MultiChoiceStaged).stage)
+            vm.onIntent(QuestionIntent.ToggleOption(2))
+            vm.onIntent(QuestionIntent.Submit)
+            val after = vm.uiState.value as QuestionUiState.MultiChoiceStaged
+            assertEquals(QuestionUiState.Stage.STEM, after.stage)
+            assertTrue(after.selectedIndices.isEmpty())
+        }
+
+    @Test
+    fun `2_4-UNIT-021 staged multi stem timeout transitions to OPTIONS`() =
+        runTest(dispatcher) {
+            val cfg =
+                config(listOf(multiQuestion(mode = PresentMode.STAGED, stemMs = 2_000L, optionsMs = 20_000L)))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            advanceTimeBy(2_100L)
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            assertTrue(
+                "expected MultiChoiceStaged OPTIONS got $state",
+                state is QuestionUiState.MultiChoiceStaged,
+            )
+            assertEquals(QuestionUiState.Stage.OPTIONS, (state as QuestionUiState.MultiChoiceStaged).stage)
+            assertEquals(0, repo.records.size)
         }
 
     private companion object {

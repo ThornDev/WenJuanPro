@@ -77,6 +77,7 @@ class QuestionViewModel
             when (intent) {
                 QuestionIntent.OnEnter -> bootstrapIfNeeded()
                 is QuestionIntent.SelectOption -> handleSelect(intent.index)
+                is QuestionIntent.ToggleOption -> handleToggle(intent.index)
                 QuestionIntent.Submit -> handleSubmit()
                 QuestionIntent.TimerExpired -> handleTimerExpired()
                 QuestionIntent.StageTransition -> handleStageTransition()
@@ -143,13 +144,19 @@ class QuestionViewModel
                 return
             }
             val question = cfg.questions[cursor]
-            if (question !is Question.SingleChoice) {
-                Timber.w("question type not supported in 2.3; qid=${question.qid}")
-                _uiState.value = QuestionUiState.Error(CODE_UNSUPPORTED_QUESTION)
-                return
-            }
             val now = clock.nowMs()
-            fsmState = questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(question), now)
+            fsmState =
+                when (question) {
+                    is Question.SingleChoice ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(question), now)
+                    is Question.MultiChoice ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(question), now)
+                    else -> {
+                        Timber.w("question type not supported; qid=${question.qid}")
+                        _uiState.value = QuestionUiState.Error(CODE_UNSUPPORTED_QUESTION)
+                        return
+                    }
+                }
             renderUiFromFsm(now)
             startCountdownForCurrentStage()
         }
@@ -166,31 +173,73 @@ class QuestionViewModel
             renderUiFromFsm(clock.nowMs())
         }
 
+        private fun handleToggle(index: Int) {
+            val current = fsmState
+            if (current !is QuestionFsmState.MultiAllInOne &&
+                current !is QuestionFsmState.MultiStagedOptions
+            ) {
+                return
+            }
+            fsmState =
+                questionFsm.reduce(current, QuestionEvent.ToggleOption(index), clock.nowMs())
+            renderUiFromFsm(clock.nowMs())
+        }
+
         private fun handleSubmit() {
             val current = fsmState
-            val selected =
-                when (current) {
-                    is QuestionFsmState.QuestionAllInOne -> current.selectedIndex
-                    is QuestionFsmState.QuestionStagedOptions -> current.selectedIndex
-                    else -> null
-                } ?: return
-            cancelCountdown()
-            val now = clock.nowMs()
-            fsmState = questionFsm.reduce(current, QuestionEvent.OptionsSubmit(selected), now)
-            renderUiFromFsm(now)
-            persistWriting()
+            when (current) {
+                is QuestionFsmState.QuestionAllInOne -> {
+                    val selected = current.selectedIndex ?: return
+                    cancelCountdown()
+                    val now = clock.nowMs()
+                    fsmState = questionFsm.reduce(current, QuestionEvent.OptionsSubmit(selected), now)
+                    renderUiFromFsm(now)
+                    persistWriting()
+                }
+                is QuestionFsmState.QuestionStagedOptions -> {
+                    val selected = current.selectedIndex ?: return
+                    cancelCountdown()
+                    val now = clock.nowMs()
+                    fsmState = questionFsm.reduce(current, QuestionEvent.OptionsSubmit(selected), now)
+                    renderUiFromFsm(now)
+                    persistWriting()
+                }
+                is QuestionFsmState.MultiAllInOne -> {
+                    if (current.selectedIndices.isEmpty()) return
+                    cancelCountdown()
+                    val now = clock.nowMs()
+                    fsmState = questionFsm.reduce(current, QuestionEvent.MultiOptionsSubmit(current.selectedIndices), now)
+                    renderUiFromFsm(now)
+                    persistWriting()
+                }
+                is QuestionFsmState.MultiStagedOptions -> {
+                    if (current.selectedIndices.isEmpty()) return
+                    cancelCountdown()
+                    val now = clock.nowMs()
+                    fsmState = questionFsm.reduce(current, QuestionEvent.MultiOptionsSubmit(current.selectedIndices), now)
+                    renderUiFromFsm(now)
+                    persistWriting()
+                }
+                else -> return
+            }
         }
 
         private fun handleTimerExpired() {
             val current = fsmState
             when (current) {
-                is QuestionFsmState.QuestionAllInOne, is QuestionFsmState.QuestionStagedOptions -> {
+                is QuestionFsmState.QuestionAllInOne,
+                is QuestionFsmState.QuestionStagedOptions,
+                is QuestionFsmState.MultiAllInOne,
+                is QuestionFsmState.MultiStagedOptions,
+                -> {
                     cancelCountdown()
                     fsmState =
                         questionFsm.reduce(current, QuestionEvent.OptionsTimeout, clock.nowMs())
                     persistWriting()
                 }
-                is QuestionFsmState.QuestionStagedStem -> {
+                is QuestionFsmState.QuestionStagedStem,
+                is QuestionFsmState.MultiStagedStem,
+                -> {
                     cancelCountdown()
                     fsmState = questionFsm.reduce(current, QuestionEvent.StemTimeout, clock.nowMs())
                     renderUiFromFsm(clock.nowMs())
@@ -202,7 +251,11 @@ class QuestionViewModel
 
         private fun handleStageTransition() {
             val current = fsmState
-            if (current !is QuestionFsmState.QuestionStagedStem) return
+            if (current !is QuestionFsmState.QuestionStagedStem &&
+                current !is QuestionFsmState.MultiStagedStem
+            ) {
+                return
+            }
             cancelCountdown()
             fsmState = questionFsm.reduce(current, QuestionEvent.StemTimeout, clock.nowMs())
             renderUiFromFsm(clock.nowMs())
@@ -259,7 +312,17 @@ class QuestionViewModel
             val nextQuestion = cfg.questions[cursor]
             val now = clock.nowMs()
             fsmState =
-                questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(nextQuestion), now)
+                when (nextQuestion) {
+                    is Question.SingleChoice ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(nextQuestion), now)
+                    is Question.MultiChoice ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(nextQuestion), now)
+                    else -> {
+                        Timber.w("question type not supported; qid=${nextQuestion.qid}")
+                        _uiState.value = QuestionUiState.Error(CODE_UNSUPPORTED_QUESTION)
+                        return
+                    }
+                }
             renderUiFromFsm(now)
             startCountdownForCurrentStage()
             _effects.send(
@@ -339,6 +402,63 @@ class QuestionViewModel
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
                     }
+                    is QuestionFsmState.MultiAllInOne -> {
+                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.MultiChoiceAllInOne(
+                            qid = state.question.qid,
+                            questionIndex = cursor + 1,
+                            totalQuestions = totalQuestions,
+                            stem = state.question.stem,
+                            options = state.question.options,
+                            selectedIndices = state.selectedIndices,
+                            submitEnabled = state.selectedIndices.isNotEmpty(),
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
+                    is QuestionFsmState.MultiStagedStem -> {
+                        val durationMs =
+                            (state.question.stemDurationMs ?: 1L).coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.MultiChoiceStaged(
+                            qid = state.question.qid,
+                            questionIndex = cursor + 1,
+                            totalQuestions = totalQuestions,
+                            stem = state.question.stem,
+                            options = state.question.options,
+                            stage = QuestionUiState.Stage.STEM,
+                            selectedIndices = emptySet(),
+                            submitEnabled = false,
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
+                    is QuestionFsmState.MultiStagedOptions -> {
+                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.MultiChoiceStaged(
+                            qid = state.question.qid,
+                            questionIndex = cursor + 1,
+                            totalQuestions = totalQuestions,
+                            stem = state.question.stem,
+                            options = state.question.options,
+                            stage = QuestionUiState.Stage.OPTIONS,
+                            selectedIndices = state.selectedIndices,
+                            submitEnabled = state.selectedIndices.isNotEmpty(),
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
                     is QuestionFsmState.Writing -> _uiState.value
                     is QuestionFsmState.WriteError -> _uiState.value
                     is QuestionFsmState.NextDecision -> _uiState.value
@@ -356,6 +476,12 @@ class QuestionViewModel
                     is QuestionFsmState.QuestionStagedStem ->
                         s.stageEnteredMs to (s.question.stemDurationMs ?: 0L)
                     is QuestionFsmState.QuestionStagedOptions ->
+                        s.stageEnteredMs to s.question.optionsDurationMs
+                    is QuestionFsmState.MultiAllInOne ->
+                        s.stageEnteredMs to s.question.optionsDurationMs
+                    is QuestionFsmState.MultiStagedStem ->
+                        s.stageEnteredMs to (s.question.stemDurationMs ?: 0L)
+                    is QuestionFsmState.MultiStagedOptions ->
                         s.stageEnteredMs to s.question.optionsDurationMs
                     else -> return
                 }

@@ -11,5 +11,7 @@ sealed interface QuestionIntent {
 
     data object StageTransition : QuestionIntent
 
+    data class ToggleOption(val index: Int) : QuestionIntent
+
     data object Retry : QuestionIntent
 }

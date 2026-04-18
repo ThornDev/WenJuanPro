@@ -25,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Icon
 import androidx.compose.ui.unit.dp
 
 object OptionCardTags {
@@ -32,6 +35,7 @@ object OptionCardTags {
     const val BADGE_PREFIX = "option_card_badge_"
     const val LABEL_PREFIX = "option_card_label_"
     const val IMAGE_PLACEHOLDER_PREFIX = "option_card_image_placeholder_"
+    const val CHECK_CIRCLE_PREFIX = "option_card_check_circle_"
 }
 
 private val PrimaryBlue = Color(0xFF1976D2)
@@ -44,7 +48,7 @@ fun OptionCard(
     text: String?,
     imageAssetName: String?,
     isSelected: Boolean,
-    @Suppress("UNUSED_PARAMETER") isMulti: Boolean,
+    isMulti: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,49 +83,64 @@ fun OptionCard(
                 .testTag(OptionCardTags.PREFIX + index)
                 .clickable(onClick = onClick),
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(32.dp)
-                        .background(badgeColor, shape = CircleShape)
-                        .testTag(OptionCardTags.BADGE_PREFIX + index),
-                contentAlignment = Alignment.Center,
+        Box {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = index.toString(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            if (text != null) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.testTag(OptionCardTags.LABEL_PREFIX + index),
-                )
-            }
-            if (imageAssetName != null) {
-                Spacer(Modifier.width(8.dp))
                 Box(
                     modifier =
                         Modifier
-                            .heightIn(min = 48.dp)
-                            .width(48.dp)
-                            .background(PlaceholderGray, shape = RoundedCornerShape(4.dp))
-                            .testTag(OptionCardTags.IMAGE_PLACEHOLDER_PREFIX + index),
+                            .size(32.dp)
+                            .background(badgeColor, shape = CircleShape)
+                            .testTag(OptionCardTags.BADGE_PREFIX + index),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "图",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.DarkGray,
+                        text = index.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
                     )
                 }
+                Spacer(Modifier.width(12.dp))
+                if (text != null) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.testTag(OptionCardTags.LABEL_PREFIX + index),
+                    )
+                }
+                if (imageAssetName != null) {
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier =
+                            Modifier
+                                .heightIn(min = 48.dp)
+                                .width(48.dp)
+                                .background(PlaceholderGray, shape = RoundedCornerShape(4.dp))
+                                .testTag(OptionCardTags.IMAGE_PLACEHOLDER_PREFIX + index),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "图",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.DarkGray,
+                        )
+                    }
+                }
+            }
+            if (isMulti && isSelected) {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = PrimaryBlue,
+                    modifier =
+                        Modifier
+                            .size(24.dp)
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .testTag(OptionCardTags.CHECK_CIRCLE_PREFIX + index),
+                )
             }
         }
     }
