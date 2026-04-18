@@ -1,0 +1,45 @@
+# configId: basic-quiz-demo
+# title: 基础能力快速测试
+
+[Q1]
+type: single
+mode: all_in_one
+durationMs: 15000
+stem: "床前明月光"的作者是谁？
+options: 杜甫|李白|白居易|王维
+correct: 2
+score: 5|0|0|0
+
+[Q2]
+type: single
+mode: all_in_one
+durationMs: 15000
+stem: 一年有多少天？
+options: 364天|365天|366天|360天
+correct: 2
+score: 5|0|0|0
+
+[Q3]
+type: multi
+mode: all_in_one
+durationMs: 20000
+stem: 以下哪些是三原色？（多选）
+options: 红|绿|蓝|黄|紫
+correct: 1,2,3
+score: 1|1|1|0|0
+
+[Q4]
+type: memory
+mode: all_in_one
+optionsDurationMs: 30000
+dotsPositions: 1,10,19,28,37,46,55,6,15,24
+
+[Q5]
+type: single
+mode: staged
+stemDurationMs: 5000
+optionsDurationMs: 15000
+stem: 请先记住这个数字：7×8=？然后选择正确答案。
+options: 54|56|58|64
+correct: 2
+score: 5|0|0|0
