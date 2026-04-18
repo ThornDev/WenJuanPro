@@ -66,6 +66,17 @@ sealed interface QuestionFsmState {
     data class MemoryRendering(
         val question: Question.Memory,
     ) : QuestionFsmState
+
+    data class MemoryFlashing(
+        val question: Question.Memory,
+        val flashSequence: List<Int>,
+        val currentFlashIndex: Int,
+    ) : QuestionFsmState
+
+    data class MemoryRecalling(
+        val question: Question.Memory,
+        val flashSequence: List<Int>,
+    ) : QuestionFsmState
 }
 
 sealed interface QuestionEvent {
@@ -94,6 +105,12 @@ sealed interface QuestionEvent {
     data object RetryExhausted : QuestionEvent
 
     data class EnterMemory(val question: Question.Memory) : QuestionEvent
+
+    data class FlashStart(val flashSequence: List<Int>) : QuestionEvent
+
+    data class FlashTick(val nextIndex: Int) : QuestionEvent
+
+    data object FlashComplete : QuestionEvent
 }
 
 @Singleton
@@ -112,6 +129,9 @@ class QuestionFsm
                 is QuestionEvent.Enter -> onEnter(event.question, nowMs)
                 is QuestionEvent.EnterMulti -> onEnterMulti(event.question, nowMs)
                 is QuestionEvent.EnterMemory -> onEnterMemory(event.question)
+                is QuestionEvent.FlashStart -> onFlashStart(state, event.flashSequence)
+                is QuestionEvent.FlashTick -> onFlashTick(state, event.nextIndex)
+                QuestionEvent.FlashComplete -> onFlashComplete(state)
                 is QuestionEvent.SelectOption -> onSelectOption(state, event.index)
                 is QuestionEvent.ToggleOption -> onToggleOption(state, event.index)
                 is QuestionEvent.OptionsSubmit -> onOptionsSubmit(state, event.index, nowMs)
@@ -127,6 +147,40 @@ class QuestionFsm
         private fun onEnterMemory(
             question: Question.Memory,
         ): QuestionFsmState = QuestionFsmState.MemoryRendering(question = question)
+
+        private fun onFlashStart(
+            state: QuestionFsmState,
+            flashSequence: List<Int>,
+        ): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.MemoryRendering ->
+                    QuestionFsmState.MemoryFlashing(
+                        question = state.question,
+                        flashSequence = flashSequence,
+                        currentFlashIndex = 0,
+                    )
+                else -> state
+            }
+
+        private fun onFlashTick(
+            state: QuestionFsmState,
+            nextIndex: Int,
+        ): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.MemoryFlashing ->
+                    state.copy(currentFlashIndex = nextIndex)
+                else -> state
+            }
+
+        private fun onFlashComplete(state: QuestionFsmState): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.MemoryFlashing ->
+                    QuestionFsmState.MemoryRecalling(
+                        question = state.question,
+                        flashSequence = state.flashSequence,
+                    )
+                else -> state
+            }
 
         private fun onEnter(
             question: Question.SingleChoice,

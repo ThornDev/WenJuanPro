@@ -14,6 +14,7 @@ import ai.wenjuanpro.app.domain.model.SsaidUnavailableException
 import ai.wenjuanpro.app.ui.components.DotState
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
+import ai.wenjuanpro.app.domain.usecase.FlashSequenceGenerator
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -45,6 +46,7 @@ class QuestionViewModel
         private val configRepository: ConfigRepository,
         private val startSessionUseCase: StartSessionUseCase,
         private val appendResultUseCase: AppendResultUseCase,
+        private val flashSequenceGenerator: FlashSequenceGenerator,
         private val questionFsm: QuestionFsm,
         private val clock: Clock,
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -63,6 +65,7 @@ class QuestionViewModel
         private var config: Config? = null
         private var cursor: Int = 0
         private var countdownJob: Job? = null
+        private var flashJob: Job? = null
         private var bootstrapped: Boolean = false
 
         init {
@@ -159,7 +162,9 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(question), now)
                 }
             renderUiFromFsm(now)
-            if (fsmState !is QuestionFsmState.MemoryRendering) {
+            if (fsmState is QuestionFsmState.MemoryRendering) {
+                startFlashSequenceAfterDelay(question as Question.Memory)
+            } else {
                 startCountdownForCurrentStage()
             }
         }
@@ -265,6 +270,43 @@ class QuestionViewModel
             startCountdownForCurrentStage()
         }
 
+        private fun startFlashSequenceAfterDelay(question: Question.Memory) {
+            flashJob?.cancel()
+            flashJob = viewModelScope.launch {
+                try {
+                    delay(FLASH_INITIAL_DELAY_MS)
+                    val flashSequence = flashSequenceGenerator.generate(question.dotsPositions)
+                    fsmState = questionFsm.reduce(
+                        fsmState, QuestionEvent.FlashStart(flashSequence), clock.nowMs(),
+                    )
+                    renderUiFromFsm(clock.nowMs())
+
+                    for (i in flashSequence.indices) {
+                        if (i > 0) {
+                            fsmState = questionFsm.reduce(
+                                fsmState, QuestionEvent.FlashTick(i), clock.nowMs(),
+                            )
+                        }
+                        renderUiFromFsm(clock.nowMs())
+                        delay(question.flashDurationMs)
+                        renderUiFromFsm(clock.nowMs())
+                        if (i < flashSequence.size - 1) {
+                            delay(question.flashIntervalMs)
+                        }
+                    }
+
+                    fsmState = questionFsm.reduce(
+                        fsmState, QuestionEvent.FlashComplete, clock.nowMs(),
+                    )
+                    renderUiFromFsm(clock.nowMs())
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    Timber.w("flash sequence failed; qid=${question.qid} error=${e.message}")
+                    _uiState.value = QuestionUiState.Error(CODE_ANIMATION_FAILED)
+                }
+            }
+        }
+
         private fun handleRetry() {
             val current = fsmState
             if (current !is QuestionFsmState.WriteError) return
@@ -324,7 +366,9 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(nextQuestion), now)
                 }
             renderUiFromFsm(now)
-            if (fsmState !is QuestionFsmState.MemoryRendering) {
+            if (fsmState is QuestionFsmState.MemoryRendering) {
+                startFlashSequenceAfterDelay(nextQuestion as Question.Memory)
+            } else {
                 startCountdownForCurrentStage()
             }
             _effects.send(
@@ -474,6 +518,37 @@ class QuestionViewModel
                             isWarning = false,
                         )
                     }
+                    is QuestionFsmState.MemoryFlashing -> {
+                        val positions = state.question.dotsPositions
+                        val flashingDotIndex = state.flashSequence[state.currentFlashIndex]
+                        val dotStates = List(64) { index ->
+                            when {
+                                index == flashingDotIndex -> DotState.FLASHING
+                                index in positions -> DotState.BLUE
+                                else -> DotState.EMPTY
+                            }
+                        }
+                        QuestionUiState.Memory(
+                            dotsPositions = positions,
+                            dotStates = dotStates,
+                            phase = MemoryPhase.Flashing(state.currentFlashIndex),
+                            countdownProgress = 1f,
+                            isWarning = false,
+                        )
+                    }
+                    is QuestionFsmState.MemoryRecalling -> {
+                        val positions = state.question.dotsPositions
+                        val dotStates = List(64) { index ->
+                            if (index in positions) DotState.BLUE else DotState.EMPTY
+                        }
+                        QuestionUiState.Memory(
+                            dotsPositions = positions,
+                            dotStates = dotStates,
+                            phase = MemoryPhase.Recalling,
+                            countdownProgress = 1f,
+                            isWarning = false,
+                        )
+                    }
                     is QuestionFsmState.Writing -> _uiState.value
                     is QuestionFsmState.WriteError -> _uiState.value
                     is QuestionFsmState.NextDecision -> _uiState.value
@@ -529,6 +604,7 @@ class QuestionViewModel
 
         override fun onCleared() {
             cancelCountdown()
+            flashJob?.cancel()
             super.onCleared()
         }
 
@@ -542,5 +618,7 @@ class QuestionViewModel
             const val CODE_UNSUPPORTED_QUESTION: String = "QUESTION_TYPE_UNSUPPORTED"
             const val WARNING_THRESHOLD_MS: Long = 5_000L
             const val COUNTDOWN_TICK_MS: Long = 100L
+            const val FLASH_INITIAL_DELAY_MS: Long = 500L
+            const val CODE_ANIMATION_FAILED: String = "ANIMATION_FAILED"
         }
     }

@@ -18,6 +18,7 @@ import ai.wenjuanpro.app.domain.model.Session
 import ai.wenjuanpro.app.domain.model.StemContent
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
+import ai.wenjuanpro.app.domain.usecase.FlashSequenceGenerator
 import ai.wenjuanpro.app.domain.usecase.ScoreMultiChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreSingleChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
@@ -157,6 +158,7 @@ class QuestionViewModelTest {
             configRepository = configRepo,
             startSessionUseCase = startSession,
             appendResultUseCase = append,
+            flashSequenceGenerator = FlashSequenceGenerator(),
             questionFsm = fsm,
             clock = clock,
             ioDispatcher = dispatcher,
@@ -752,6 +754,45 @@ class QuestionViewModelTest {
             val state = vm.uiState.value as QuestionUiState.Memory
             assertEquals(ai.wenjuanpro.app.ui.components.DotState.BLUE, state.dotStates[0])
             assertEquals(ai.wenjuanpro.app.ui.components.DotState.BLUE, state.dotStates[1])
+        }
+
+    // ── Story 3.2: Flash Sequence ──
+
+    @Test
+    fun `3_2-UNIT-006 flash starts 500ms after entering Memory`() =
+        runTest {
+            val cfg = config(listOf(memoryQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            // At t=0, phase should be Rendering
+            val beforeFlash = vm.uiState.value as QuestionUiState.Memory
+            assertTrue(beforeFlash.phase is MemoryPhase.Rendering)
+            // Advance past 500ms delay
+            advanceTimeBy(501L)
+            advanceUntilIdle()
+            val afterFlash = vm.uiState.value as QuestionUiState.Memory
+            assertTrue(
+                "expected Flashing, got ${afterFlash.phase}",
+                afterFlash.phase is MemoryPhase.Flashing,
+            )
+        }
+
+    @Test
+    fun `3_2-UNIT-008 after 15000ms total phase is Recalling`() =
+        runTest {
+            val cfg = config(listOf(memoryQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            // 500ms initial delay + 10*1000ms flash + 9*500ms interval = 15000ms total
+            advanceTimeBy(15_100L)
+            advanceUntilIdle()
+            val state = vm.uiState.value as QuestionUiState.Memory
+            assertTrue(
+                "expected Recalling, got ${state.phase}",
+                state.phase is MemoryPhase.Recalling,
+            )
         }
 
     private companion object {

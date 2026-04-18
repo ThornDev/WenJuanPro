@@ -414,4 +414,42 @@ class QuestionFsmTest {
         val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
         assertTrue(s is QuestionFsmState.MemoryRendering)
     }
+
+    // ── Story 3.2: Flash Sequence ──
+
+    @Test
+    fun `3_2-UNIT-003 FlashStart transitions MemoryRendering to MemoryFlashing index 0`() {
+        val q = memoryQuestion()
+        val rendering = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        val seq = listOf(7, 3, 44, 19, 58, 12, 30, 22, 37, 51)
+        val s = fsm.reduce(rendering, QuestionEvent.FlashStart(seq), 0L)
+        assertTrue("expected MemoryFlashing, got $s", s is QuestionFsmState.MemoryFlashing)
+        s as QuestionFsmState.MemoryFlashing
+        assertEquals(0, s.currentFlashIndex)
+        assertEquals(seq, s.flashSequence)
+    }
+
+    @Test
+    fun `3_2-UNIT-004 FlashTick advances currentFlashIndex`() {
+        val q = memoryQuestion()
+        val rendering = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        val seq = listOf(7, 3, 44, 19, 58, 12, 30, 22, 37, 51)
+        val flashing = fsm.reduce(rendering, QuestionEvent.FlashStart(seq), 0L)
+        val s = fsm.reduce(flashing, QuestionEvent.FlashTick(1), 0L)
+        assertTrue(s is QuestionFsmState.MemoryFlashing)
+        assertEquals(1, (s as QuestionFsmState.MemoryFlashing).currentFlashIndex)
+    }
+
+    @Test
+    fun `3_2-UNIT-005 FlashComplete transitions to MemoryRecalling with flashSequence`() {
+        val q = memoryQuestion()
+        val rendering = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        val seq = listOf(7, 3, 44, 19, 58, 12, 30, 22, 37, 51)
+        val flashing = fsm.reduce(rendering, QuestionEvent.FlashStart(seq), 0L)
+        val s = fsm.reduce(flashing, QuestionEvent.FlashComplete, 0L)
+        assertTrue("expected MemoryRecalling, got $s", s is QuestionFsmState.MemoryRecalling)
+        s as QuestionFsmState.MemoryRecalling
+        assertEquals(seq, s.flashSequence)
+        assertEquals(q, s.question)
+    }
 }
