@@ -21,7 +21,7 @@ class ResultFileParserTest {
             Q3|single|all_in_one|-|30000||1|0|not_answered
         """.trimIndent()
         val qids = ResultFileParser.parseCompletedQids(content)
-        assertEquals(setOf("Q1", "Q2", "Q3"), qids)
+        assertEquals(setOf("Q1", "Q2"), qids) // Q3 is not_answered → excluded
     }
 
     @Test
@@ -54,7 +54,7 @@ class ResultFileParserTest {
             Q3|single|all_in_one|-|30000||1|0|not_answered
         """.trimIndent()
         val qids = ResultFileParser.parseCompletedQids(content)
-        assertEquals(setOf("Q1", "Q3"), qids)
+        assertEquals(setOf("Q1"), qids) // Q3 is not_answered → excluded
     }
 
     @Test
@@ -69,5 +69,61 @@ class ResultFileParserTest {
         """.trimIndent()
         val qids = ResultFileParser.parseCompletedQids(content)
         assertEquals(setOf("Q1", "Q2"), qids)
+    }
+
+    // Story 4.2: status-aware filtering
+
+    @Test
+    fun `4_2 parseCompletedQids only includes status done`() {
+        val content = """
+            deviceId: abc123
+            ---
+            Q1|single|all_in_one|-|24530|2|1|0|done
+            Q2|multi|staged|10000|8420|1,3|1,2|1|not_answered
+            Q3|memory|all_in_one|-|42300|3,7|3,7,12|2|done
+            Q4|single|all_in_one|-|30000||1|0|error
+        """.trimIndent()
+        val qids = ResultFileParser.parseCompletedQids(content)
+        assertEquals(setOf("Q1", "Q3"), qids)
+    }
+
+    @Test
+    fun `4_2 parseQidsByStatus returns all qids with last status`() {
+        val content = """
+            deviceId: abc123
+            ---
+            Q1|single|all_in_one|-|24530|2|1|0|done
+            Q2|multi|staged|10000|8420||1,2|0|not_answered
+            Q1|single|all_in_one|-|25000|1|1|10|done
+        """.trimIndent()
+        val statusMap = ResultFileParser.parseQidsByStatus(content)!!
+        assertEquals("done", statusMap["Q1"])       // last line wins
+        assertEquals("not_answered", statusMap["Q2"])
+    }
+
+    // Story 4.3: partial status not counted as done
+
+    @Test
+    fun `4_3 partial status excluded from completedQids`() {
+        val content = """
+            deviceId: abc123
+            ---
+            Q1|single|all_in_one|-|24530|2|1|0|done
+            Q2|single|staged|10000|-||1|0|partial
+        """.trimIndent()
+        val qids = ResultFileParser.parseCompletedQids(content)
+        assertEquals(setOf("Q1"), qids)
+    }
+
+    @Test
+    fun `4_3 redo overwrites partial with done`() {
+        val content = """
+            deviceId: abc123
+            ---
+            Q2|single|staged|10000|-||1|0|partial
+            Q2|single|staged|10000|25000|2|1|5|done
+        """.trimIndent()
+        val qids = ResultFileParser.parseCompletedQids(content)
+        assertEquals(setOf("Q2"), qids) // last line is done → included
     }
 }
