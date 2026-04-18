@@ -62,6 +62,10 @@ sealed interface QuestionFsmState {
     data object Terminated : QuestionFsmState
 
     data class Errored(val message: String) : QuestionFsmState
+
+    data class MemoryRendering(
+        val question: Question.Memory,
+    ) : QuestionFsmState
 }
 
 sealed interface QuestionEvent {
@@ -88,6 +92,8 @@ sealed interface QuestionEvent {
     data object Retry : QuestionEvent
 
     data object RetryExhausted : QuestionEvent
+
+    data class EnterMemory(val question: Question.Memory) : QuestionEvent
 }
 
 @Singleton
@@ -105,6 +111,7 @@ class QuestionFsm
             when (event) {
                 is QuestionEvent.Enter -> onEnter(event.question, nowMs)
                 is QuestionEvent.EnterMulti -> onEnterMulti(event.question, nowMs)
+                is QuestionEvent.EnterMemory -> onEnterMemory(event.question)
                 is QuestionEvent.SelectOption -> onSelectOption(state, event.index)
                 is QuestionEvent.ToggleOption -> onToggleOption(state, event.index)
                 is QuestionEvent.OptionsSubmit -> onOptionsSubmit(state, event.index, nowMs)
@@ -116,6 +123,10 @@ class QuestionFsm
                 QuestionEvent.Retry -> onRetry(state)
                 QuestionEvent.RetryExhausted -> onRetryExhausted(state)
             }
+
+        private fun onEnterMemory(
+            question: Question.Memory,
+        ): QuestionFsmState = QuestionFsmState.MemoryRendering(question = question)
 
         private fun onEnter(
             question: Question.SingleChoice,

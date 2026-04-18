@@ -360,4 +360,58 @@ class QuestionFsmTest {
         val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(q), 0L)
         assertTrue(s is QuestionFsmState.Errored)
     }
+
+    // ── Story 3.1: Memory ──
+
+    private fun memoryQuestion(
+        qid: String = "M1",
+        dotsPositions: List<Int> = listOf(3, 7, 12, 19, 22, 30, 37, 44, 51, 58),
+        optionsMs: Long = 30_000L,
+    ): Question.Memory =
+        Question.Memory(
+            qid = qid,
+            mode = PresentMode.ALL_IN_ONE,
+            stemDurationMs = null,
+            optionsDurationMs = optionsMs,
+            dotsPositions = dotsPositions,
+        )
+
+    @Test
+    fun `3_1-UNIT-001 EnterMemory transitions to MemoryRendering`() {
+        val q = memoryQuestion()
+        val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 1_000L)
+        assertTrue("expected MemoryRendering, got $s", s is QuestionFsmState.MemoryRendering)
+        s as QuestionFsmState.MemoryRendering
+        assertEquals(q, s.question)
+    }
+
+    @Test
+    fun `3_1-UNIT-004 EnterMemory with corner indices 0 and 63`() {
+        val q = memoryQuestion(dotsPositions = listOf(0, 7, 12, 19, 22, 30, 37, 44, 56, 63))
+        val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        assertTrue(s is QuestionFsmState.MemoryRendering)
+        assertEquals(0, (s as QuestionFsmState.MemoryRendering).question.dotsPositions.first())
+        assertEquals(63, s.question.dotsPositions.last())
+    }
+
+    @Test
+    fun `3_1-UNIT-005 EnterMemory with adjacent indices 0 and 1`() {
+        val q = memoryQuestion(dotsPositions = listOf(0, 1, 12, 19, 22, 30, 37, 44, 51, 58))
+        val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        assertTrue(s is QuestionFsmState.MemoryRendering)
+    }
+
+    @Test
+    fun `3_1-BLIND-BOUNDARY-001 EnterMemory with all 4 corners`() {
+        val q = memoryQuestion(dotsPositions = listOf(0, 7, 56, 63, 12, 19, 22, 30, 37, 44))
+        val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        assertTrue(s is QuestionFsmState.MemoryRendering)
+    }
+
+    @Test
+    fun `3_1-BLIND-BOUNDARY-002 EnterMemory with 10 consecutive indices`() {
+        val q = memoryQuestion(dotsPositions = (0..9).toList())
+        val s = fsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), 0L)
+        assertTrue(s is QuestionFsmState.MemoryRendering)
+    }
 }

@@ -11,6 +11,7 @@ import ai.wenjuanpro.app.domain.model.AppFailure
 import ai.wenjuanpro.app.domain.model.Config
 import ai.wenjuanpro.app.domain.model.Question
 import ai.wenjuanpro.app.domain.model.SsaidUnavailableException
+import ai.wenjuanpro.app.ui.components.DotState
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
@@ -82,6 +83,9 @@ class QuestionViewModel
                 QuestionIntent.TimerExpired -> handleTimerExpired()
                 QuestionIntent.StageTransition -> handleStageTransition()
                 QuestionIntent.Retry -> handleRetry()
+                QuestionIntent.FlashComplete -> throw NotImplementedError("Story 3.2")
+                is QuestionIntent.RecallTap -> throw NotImplementedError("Story 3.3")
+                QuestionIntent.RecallTimeout -> throw NotImplementedError("Story 3.3")
             }
         }
 
@@ -151,14 +155,13 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(question), now)
                     is Question.MultiChoice ->
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(question), now)
-                    else -> {
-                        Timber.w("question type not supported; qid=${question.qid}")
-                        _uiState.value = QuestionUiState.Error(CODE_UNSUPPORTED_QUESTION)
-                        return
-                    }
+                    is Question.Memory ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(question), now)
                 }
             renderUiFromFsm(now)
-            startCountdownForCurrentStage()
+            if (fsmState !is QuestionFsmState.MemoryRendering) {
+                startCountdownForCurrentStage()
+            }
         }
 
         private fun handleSelect(index: Int) {
@@ -317,14 +320,13 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(nextQuestion), now)
                     is Question.MultiChoice ->
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(nextQuestion), now)
-                    else -> {
-                        Timber.w("question type not supported; qid=${nextQuestion.qid}")
-                        _uiState.value = QuestionUiState.Error(CODE_UNSUPPORTED_QUESTION)
-                        return
-                    }
+                    is Question.Memory ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(nextQuestion), now)
                 }
             renderUiFromFsm(now)
-            startCountdownForCurrentStage()
+            if (fsmState !is QuestionFsmState.MemoryRendering) {
+                startCountdownForCurrentStage()
+            }
             _effects.send(
                 QuestionEffect.NavigateNext(
                     nextQid = nextQuestion.qid,
@@ -457,6 +459,19 @@ class QuestionViewModel
                             submitEnabled = state.selectedIndices.isNotEmpty(),
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
+                    is QuestionFsmState.MemoryRendering -> {
+                        val positions = state.question.dotsPositions
+                        val dotStates = List(64) { index ->
+                            if (index in positions) DotState.BLUE else DotState.EMPTY
+                        }
+                        QuestionUiState.Memory(
+                            dotsPositions = positions,
+                            dotStates = dotStates,
+                            phase = MemoryPhase.Rendering,
+                            countdownProgress = 1f,
+                            isWarning = false,
                         )
                     }
                     is QuestionFsmState.Writing -> _uiState.value

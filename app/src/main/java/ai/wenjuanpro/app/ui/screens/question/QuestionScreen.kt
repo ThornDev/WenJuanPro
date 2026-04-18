@@ -90,6 +90,8 @@ fun QuestionContent(
                     MultiChoiceAllInOneContent(state = state, onIntent = onIntent)
                 is QuestionUiState.MultiChoiceStaged ->
                     StagedMultiChoiceScaffold(state = state, onIntent = onIntent)
+                is QuestionUiState.Memory ->
+                    MemoryQuestionContent(state = state)
                 is QuestionUiState.RetryWriteBanner ->
                     RetryBannerBody(state = state, onIntent = onIntent)
                 is QuestionUiState.Error -> ErrorBody(state.message)

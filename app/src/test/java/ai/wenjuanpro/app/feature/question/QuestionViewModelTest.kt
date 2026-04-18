@@ -668,6 +668,92 @@ class QuestionViewModelTest {
             assertEquals(0, repo.records.size)
         }
 
+    // ── Story 3.1: Memory ──
+
+    private fun memoryQuestion(
+        qid: String = "M1",
+        dotsPositions: List<Int> = listOf(3, 7, 12, 19, 22, 30, 37, 44, 51, 58),
+        optionsMs: Long = 30_000L,
+    ): Question.Memory =
+        Question.Memory(
+            qid = qid,
+            mode = PresentMode.ALL_IN_ONE,
+            stemDurationMs = null,
+            optionsDurationMs = optionsMs,
+            dotsPositions = dotsPositions,
+        )
+
+    @Test
+    fun `3_1-UNIT-002 Memory init produces 10 BLUE and 54 EMPTY`() =
+        runTest {
+            val cfg = config(listOf(memoryQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            assertTrue("expected Memory, got $state", state is QuestionUiState.Memory)
+            state as QuestionUiState.Memory
+            assertEquals(64, state.dotStates.size)
+            assertEquals(10, state.dotStates.count { it == ai.wenjuanpro.app.ui.components.DotState.BLUE })
+            assertEquals(54, state.dotStates.count { it == ai.wenjuanpro.app.ui.components.DotState.EMPTY })
+        }
+
+    @Test
+    fun `3_1-UNIT-003 dotStates BLUE positions match dotsPositions`() =
+        runTest {
+            val positions = listOf(3, 7, 12, 19, 22, 30, 37, 44, 51, 58)
+            val cfg = config(listOf(memoryQuestion(dotsPositions = positions)))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val state = vm.uiState.value as QuestionUiState.Memory
+            for (i in 0 until 64) {
+                val expected =
+                    if (i in positions) ai.wenjuanpro.app.ui.components.DotState.BLUE
+                    else ai.wenjuanpro.app.ui.components.DotState.EMPTY
+                assertEquals("index $i", expected, state.dotStates[i])
+            }
+        }
+
+    @Test
+    fun `3_1-UNIT-006 Memory init has countdown 1f isWarning false phase Rendering`() =
+        runTest {
+            val cfg = config(listOf(memoryQuestion()))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val state = vm.uiState.value as QuestionUiState.Memory
+            assertEquals(1f, state.countdownProgress, 0.001f)
+            assertFalse(state.isWarning)
+            assertTrue(state.phase is MemoryPhase.Rendering)
+        }
+
+    @Test
+    fun `3_1-UNIT-004 Memory corner indices 0 and 63 init correctly`() =
+        runTest {
+            val positions = listOf(0, 7, 12, 19, 22, 30, 37, 44, 56, 63)
+            val cfg = config(listOf(memoryQuestion(dotsPositions = positions)))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val state = vm.uiState.value as QuestionUiState.Memory
+            assertEquals(ai.wenjuanpro.app.ui.components.DotState.BLUE, state.dotStates[0])
+            assertEquals(ai.wenjuanpro.app.ui.components.DotState.BLUE, state.dotStates[63])
+        }
+
+    @Test
+    fun `3_1-UNIT-005 Memory adjacent indices 0 and 1 init without issue`() =
+        runTest {
+            val positions = listOf(0, 1, 12, 19, 22, 30, 37, 44, 51, 58)
+            val cfg = config(listOf(memoryQuestion(dotsPositions = positions)))
+            val repo = FakeResultRepo()
+            val vm = buildVm(cfg, repo)
+            advanceUntilIdle()
+            val state = vm.uiState.value as QuestionUiState.Memory
+            assertEquals(ai.wenjuanpro.app.ui.components.DotState.BLUE, state.dotStates[0])
+            assertEquals(ai.wenjuanpro.app.ui.components.DotState.BLUE, state.dotStates[1])
+        }
+
     private companion object {
         const val STUDENT_ID = "S001"
         const val CONFIG_ID = "cog-mem-2026q3"

@@ -60,4 +60,5 @@
     <string name="question_stem_phase_hint">仅阅读</string>
     <string name="question_options_phase_hint">请作答</string>
     <string name="question_progress_counter_format">第 %1$d / %2$d 题</string>
+    <string name="question_memory_phase_hint">记忆中…</string>
 </resources>

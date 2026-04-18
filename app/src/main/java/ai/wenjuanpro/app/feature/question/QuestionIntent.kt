@@ -14,4 +14,10 @@ sealed interface QuestionIntent {
     data class ToggleOption(val index: Int) : QuestionIntent
 
     data object Retry : QuestionIntent
+
+    data object FlashComplete : QuestionIntent
+
+    data class RecallTap(val gridIndex: Int) : QuestionIntent
+
+    data object RecallTimeout : QuestionIntent
 }
