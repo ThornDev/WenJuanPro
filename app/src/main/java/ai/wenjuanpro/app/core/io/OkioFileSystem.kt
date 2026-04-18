@@ -68,6 +68,9 @@ class OkioFileSystem
             }
         }
 
+        override fun rename(oldPath: String, newPath: String): Boolean =
+            File(oldPath).renameTo(File(newPath))
+
         private fun describePathKind(file: File): String =
             when {
                 file.isFile -> "regular_file"

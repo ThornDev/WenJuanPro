@@ -61,4 +61,16 @@
     <string name="question_options_phase_hint">请作答</string>
     <string name="question_progress_counter_format">第 %1$d / %2$d 题</string>
     <string name="question_memory_phase_hint">记忆中…</string>
+
+    <string name="resume_title">检测到未完成的测评</string>
+    <string name="resume_student">学号：%1$s</string>
+    <string name="resume_config">测评名称：%1$s</string>
+    <string name="resume_progress">已完成：%1$d / %2$d 题</string>
+    <string name="resume_last_time">上次开始时间：%1$s</string>
+    <string name="resume_continue_button">继续上次答题</string>
+    <string name="resume_abandon_button">放弃并重新开始</string>
+    <string name="resume_abandon_confirm_title">确认放弃？</string>
+    <string name="resume_abandon_confirm_body">将丢失上次记录，确认放弃？</string>
+    <string name="resume_abandon_confirm_cancel">取消</string>
+    <string name="resume_abandon_confirm_ok">确认放弃</string>
 </resources>

@@ -19,4 +19,7 @@ interface FileSystem {
 
     /** Deletes the file at [path] if it exists. */
     fun deleteIfExists(path: String)
+
+    /** Renames the file at [oldPath] to [newPath]. Returns true on success. */
+    fun rename(oldPath: String, newPath: String): Boolean
 }

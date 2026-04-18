@@ -3,6 +3,7 @@ package ai.wenjuanpro.app.ui
 import ai.wenjuanpro.app.ui.screens.configlist.ConfigListScreen
 import ai.wenjuanpro.app.ui.screens.permission.PermissionScreen
 import ai.wenjuanpro.app.ui.screens.question.QuestionScreen
+import ai.wenjuanpro.app.ui.screens.resume.ResumeScreen
 import ai.wenjuanpro.app.ui.screens.scan.ScanScreen
 import ai.wenjuanpro.app.ui.screens.welcome.WelcomeConfirmScreen
 import androidx.compose.material3.Text
@@ -149,7 +150,24 @@ fun WenJuanProNavHost(navController: NavHostController = rememberNavController()
                     navArgument("configId") { type = NavType.StringType },
                 ),
         ) {
-            Text("Story 4.1 will implement this")
+            ResumeScreen(
+                onNavigateToQuestion = { studentId, configId ->
+                    navController.navigate(
+                        "question?studentId=$studentId&configId=$configId",
+                    ) {
+                        popUpTo("resume?studentId=$studentId&configId=$configId") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToWelcome = { studentId, configId ->
+                    navController.navigate(
+                        "welcome?studentId=$studentId&configId=$configId",
+                    ) {
+                        popUpTo("resume?studentId=$studentId&configId=$configId") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
     }
 }
