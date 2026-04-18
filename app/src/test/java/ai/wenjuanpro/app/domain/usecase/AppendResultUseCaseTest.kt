@@ -9,7 +9,7 @@ import ai.wenjuanpro.app.domain.model.QuestionType
 import ai.wenjuanpro.app.domain.model.ResultRecord
 import ai.wenjuanpro.app.domain.model.ResultStatus
 import ai.wenjuanpro.app.domain.model.Session
-import ai.wenjuanpro.app.domain.model.WriteFailedException
+import ai.wenjuanpro.app.data.result.WriteFailedException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest

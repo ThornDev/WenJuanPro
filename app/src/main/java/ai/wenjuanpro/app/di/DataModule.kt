@@ -12,8 +12,10 @@ import ai.wenjuanpro.app.data.permission.CameraPermissionRepository
 import ai.wenjuanpro.app.data.permission.CameraPermissionRepositoryImpl
 import ai.wenjuanpro.app.data.permission.PermissionRepository
 import ai.wenjuanpro.app.data.permission.PermissionRepositoryImpl
-import ai.wenjuanpro.app.data.result.InMemoryResultRepository
+import ai.wenjuanpro.app.core.BuildConfigProvider
+import ai.wenjuanpro.app.core.BuildConfigProviderImpl
 import ai.wenjuanpro.app.data.result.ResultRepository
+import ai.wenjuanpro.app.data.result.ResultRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -47,7 +49,11 @@ abstract class DataModule {
 
     @Binds
     @Singleton
-    abstract fun bindResultRepository(impl: InMemoryResultRepository): ResultRepository
+    abstract fun bindResultRepository(impl: ResultRepositoryImpl): ResultRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBuildConfigProvider(impl: BuildConfigProviderImpl): BuildConfigProvider
 
     @Binds
     @Singleton

@@ -4,6 +4,7 @@ import okio.Path.Companion.toPath
 import okio.buffer
 import timber.log.Timber
 import java.io.File
+import java.io.FileOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import okio.FileSystem as OkioFs
@@ -48,6 +49,23 @@ class OkioFileSystem
                 Timber.w("mkdirs failed path-kind=${describePathKind(file)}")
             }
             return ok
+        }
+
+        override fun openAppend(path: String): FileOutputStream =
+            FileOutputStream(File(path), true)
+
+        override fun createFileIfNotExists(path: String) {
+            val file = File(path)
+            if (!file.exists()) {
+                file.createNewFile()
+            }
+        }
+
+        override fun deleteIfExists(path: String) {
+            val file = File(path)
+            if (file.exists()) {
+                file.delete()
+            }
         }
 
         private fun describePathKind(file: File): String =

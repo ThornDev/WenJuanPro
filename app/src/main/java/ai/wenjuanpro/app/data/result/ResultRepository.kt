@@ -35,6 +35,7 @@ sealed interface StartSessionResult {
 }
 
 data class ResumeCandidate(
-    val sessionFileName: String,
+    val resultFileName: String,
     val completedQids: Set<String>,
+    val cursor: Int = completedQids.size,
 )

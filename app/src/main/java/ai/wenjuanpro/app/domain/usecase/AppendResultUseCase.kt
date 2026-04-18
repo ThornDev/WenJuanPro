@@ -4,7 +4,7 @@ import ai.wenjuanpro.app.core.concurrency.IoDispatcher
 import ai.wenjuanpro.app.data.result.ResultRepository
 import ai.wenjuanpro.app.domain.model.AppFailure
 import ai.wenjuanpro.app.domain.model.ResultRecord
-import ai.wenjuanpro.app.domain.model.WriteFailedException
+import ai.wenjuanpro.app.data.result.WriteFailedException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
