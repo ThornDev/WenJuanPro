@@ -83,4 +83,51 @@ class ResultRecordSerializerTest {
         val line = ResultRecordSerializer.serialize(record)
         assert(line.contains(longAnswer)) { "Long answer truncated" }
     }
+
+    // Story 3.4: Memory type serialization
+
+    @Test
+    fun `3_4 memory type serialization format`() {
+        val record = ResultRecord(
+            qid = "Q3", type = QuestionType.MEMORY, mode = PresentMode.ALL_IN_ONE,
+            stemMs = null, optionsMs = 42300,
+            answer = "3,7,12,19,22,30,37,44,51,58",
+            correct = "3,7,12,19,22,30,37,44,51,58",
+            score = 10, status = ResultStatus.DONE,
+        )
+        assertEquals(
+            "Q3|memory|all_in_one|-|42300|3,7,12,19,22,30,37,44,51,58|3,7,12,19,22,30,37,44,51,58|10|done",
+            ResultRecordSerializer.serialize(record),
+        )
+    }
+
+    @Test
+    fun `3_4 memory partial answer serialization`() {
+        val record = ResultRecord(
+            qid = "Q3", type = QuestionType.MEMORY, mode = PresentMode.ALL_IN_ONE,
+            stemMs = null, optionsMs = 60000,
+            answer = "3,7",
+            correct = "3,7,12,19,22,30,37,44,51,58",
+            score = 2, status = ResultStatus.DONE,
+        )
+        assertEquals(
+            "Q3|memory|all_in_one|-|60000|3,7|3,7,12,19,22,30,37,44,51,58|2|done",
+            ResultRecordSerializer.serialize(record),
+        )
+    }
+
+    @Test
+    fun `3_4 memory not answered serialization`() {
+        val record = ResultRecord(
+            qid = "Q3", type = QuestionType.MEMORY, mode = PresentMode.ALL_IN_ONE,
+            stemMs = null, optionsMs = 60000,
+            answer = "",
+            correct = "3,7,12,19,22,30,37,44,51,58",
+            score = 0, status = ResultStatus.NOT_ANSWERED,
+        )
+        assertEquals(
+            "Q3|memory|all_in_one|-|60000||3,7,12,19,22,30,37,44,51,58|0|not_answered",
+            ResultRecordSerializer.serialize(record),
+        )
+    }
 }
