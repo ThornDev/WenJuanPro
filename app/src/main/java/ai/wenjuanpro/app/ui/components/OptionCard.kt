@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.material.icons.Icons
@@ -40,7 +42,6 @@ object OptionCardTags {
 
 private val PrimaryBlue = Color(0xFF1976D2)
 private val UnselectedGray = Color(0xFFBDBDBD)
-private val PlaceholderGray = Color(0xFFE0E0E0)
 
 @Composable
 fun OptionCard(
@@ -119,16 +120,14 @@ fun OptionCard(
                     Box(
                         modifier =
                             Modifier
-                                .heightIn(min = imgH)
                                 .width(imgW)
-                                .background(PlaceholderGray, shape = RoundedCornerShape(4.dp))
+                                .height(imgH)
+                                .clip(RoundedCornerShape(4.dp))
                                 .testTag(OptionCardTags.IMAGE_PLACEHOLDER_PREFIX + index),
-                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = "图",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.DarkGray,
+                        AssetImage(
+                            fileName = imageAssetName,
+                            modifier = Modifier.width(imgW).height(imgH),
                         )
                     }
                 }

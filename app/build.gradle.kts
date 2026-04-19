@@ -116,6 +116,8 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.zxing.android.embedded)
 
+    implementation(libs.coil.compose)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.robolectric)

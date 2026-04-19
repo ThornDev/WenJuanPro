@@ -2,6 +2,7 @@ package ai.wenjuanpro.app.ui.screens.question
 
 import ai.wenjuanpro.app.domain.model.OptionContent
 import ai.wenjuanpro.app.domain.model.StemContent
+import ai.wenjuanpro.app.ui.components.AssetImage
 import ai.wenjuanpro.app.ui.components.OptionCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,15 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
@@ -31,8 +30,6 @@ object QuestionContentTags {
     const val STEM_IMAGE_PLACEHOLDER = "question_stem_image_placeholder"
     const val OPTIONS_GRID = "question_options_grid"
 }
-
-private val PlaceholderGray = Color(0xFFE0E0E0)
 
 internal fun optionColumnsFor(count: Int): GridCells = GridCells.Adaptive(minSize = 160.dp)
 
@@ -56,8 +53,8 @@ private fun renderStem(stem: StemContent) {
                 modifier = Modifier.testTag(QuestionContentTags.STEM_TEXT),
             )
         is StemContent.Image ->
-            ImagePlaceholder(
-                label = stem.fileName,
+            StemImage(
+                fileName = stem.fileName,
                 widthDp = stem.widthDp,
                 heightDp = stem.heightDp,
             )
@@ -71,8 +68,8 @@ private fun renderStem(stem: StemContent) {
 }
 
 @Composable
-private fun ImagePlaceholder(
-    label: String,
+private fun StemImage(
+    fileName: String,
     widthDp: Int? = null,
     heightDp: Int? = null,
 ) {
@@ -82,14 +79,12 @@ private fun ImagePlaceholder(
         modifier =
             widthMod
                 .then(heightMod)
-                .background(PlaceholderGray, shape = RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .testTag(QuestionContentTags.STEM_IMAGE_PLACEHOLDER),
-        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "图片占位：$label",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.DarkGray,
+        AssetImage(
+            fileName = fileName,
+            modifier = Modifier.fillMaxWidth().height((heightDp ?: 160).dp),
         )
     }
 }
