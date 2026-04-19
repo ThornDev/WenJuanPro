@@ -21,8 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -159,25 +157,6 @@ fun CompleteScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.testTag(CompleteScreenTags.COUNTDOWN_TEXT),
             )
-            Spacer(Modifier.height(32.dp))
-            Button(
-                onClick = onReturn,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = HeroStart,
-                    ),
-                modifier =
-                    Modifier
-                        .height(52.dp)
-                        .widthIn(min = 200.dp)
-                        .testTag(CompleteScreenTags.RETURN_BUTTON),
-            ) {
-                Text(
-                    text = stringResource(R.string.complete_return_now),
-                    fontWeight = FontWeight.Medium,
-                )
-            }
         }
     }
 }

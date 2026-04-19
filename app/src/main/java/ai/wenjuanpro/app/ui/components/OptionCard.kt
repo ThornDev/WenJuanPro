@@ -43,6 +43,9 @@ object OptionCardTags {
 private val PrimaryBlue = Color(0xFF1976D2)
 private val UnselectedGray = Color(0xFFBDBDBD)
 
+private fun optionLetter(index: Int): String =
+    if (index in 1..26) ('A' + (index - 1)).toString() else index.toString()
+
 @Composable
 fun OptionCard(
     index: Int,
@@ -100,7 +103,7 @@ fun OptionCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = index.toString(),
+                        text = optionLetter(index),
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White,
                     )
