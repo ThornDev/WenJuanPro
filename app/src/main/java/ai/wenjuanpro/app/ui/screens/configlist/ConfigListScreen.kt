@@ -10,6 +10,7 @@ import ai.wenjuanpro.app.feature.configlist.ErrorSheetState
 import ai.wenjuanpro.app.ui.components.ErrorSheet
 import ai.wenjuanpro.app.ui.components.HiddenLongPressArea
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -145,21 +146,11 @@ fun ConfigListContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(128.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(Color.White.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_launcher_placeholder),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(86.dp),
-                )
-            }
+            Image(
+                painter = painterResource(R.drawable.ic_welcome_brand),
+                contentDescription = null,
+                modifier = Modifier.size(128.dp),
+            )
             Spacer(Modifier.height(28.dp))
             Text(
                 text = stringResource(R.string.config_list_hero_greeting),
