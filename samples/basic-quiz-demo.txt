@@ -61,3 +61,12 @@ stem: 请看图片，选出所有红色物体（多选）
 options: img:red_apple.png|img:blue_sky.png|img:red_car.png|img:green_tree.png
 correct: 1,3
 score: 1|0|1|0
+
+[Q8]
+type: single
+mode: all_in_one
+durationMs: 25000
+stem: 观察下面两幅图|img:before.png|img:after.png|请问图中发生了什么变化？
+options: 颜色变了|形状变了|大小变了|没有变化
+correct: 2
+score: 5|0|0|0
