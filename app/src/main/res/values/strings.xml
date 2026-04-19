@@ -19,6 +19,14 @@
     <string name="config_list_hero_greeting">欢迎使用</string>
     <string name="config_list_hero_brand">问卷测评系统</string>
     <string name="config_list_hero_hint">请选择下方测评集开始答题</string>
+    <string name="welcome_tagline">请使用学生二维码扫码登录，开始答题</string>
+    <string name="welcome_scan_button">扫码登录</string>
+    <string name="welcome_no_valid_config">暂无可用测评配置，请检查配置文件</string>
+    <string name="welcome_check_config">检查配置</string>
+    <string name="welcome_check_config_cd">检查配置是否正确</string>
+    <string name="welcome_diag_title">配置检查</string>
+    <string name="welcome_diag_empty">未发现配置文件</string>
+    <string name="welcome_diag_close">关闭</string>
     <string name="config_list_refresh_cd">刷新</string>
     <string name="config_list_status_valid">有效</string>
     <string name="config_list_status_invalid">损坏</string>
