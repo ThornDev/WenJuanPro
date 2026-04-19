@@ -5,6 +5,7 @@ import ai.wenjuanpro.app.feature.question.QuestionEffect
 import ai.wenjuanpro.app.feature.question.QuestionIntent
 import ai.wenjuanpro.app.feature.question.QuestionUiState
 import ai.wenjuanpro.app.feature.question.QuestionViewModel
+import ai.wenjuanpro.app.ui.components.ContentConstraint
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -74,12 +75,7 @@ fun QuestionContent(
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.testTag(QuestionScreenTags.ROOT)) { innerPadding ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-        ) {
+        ContentConstraint(modifier = Modifier.padding(innerPadding)) {
             when (state) {
                 QuestionUiState.Loading -> LoadingBody()
                 is QuestionUiState.SingleChoiceAllInOne ->

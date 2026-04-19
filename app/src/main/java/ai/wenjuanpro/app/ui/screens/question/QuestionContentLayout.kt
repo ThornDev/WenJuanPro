@@ -34,7 +34,7 @@ object QuestionContentTags {
 
 private val PlaceholderGray = Color(0xFFE0E0E0)
 
-internal fun optionColumnsFor(count: Int): Int = if (count <= 4) 2 else 3
+internal fun optionColumnsFor(count: Int): GridCells = GridCells.Adaptive(minSize = 160.dp)
 
 @Composable
 fun StemBlock(
@@ -101,9 +101,8 @@ fun OptionsGrid(
     onOptionClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val columns = optionColumnsFor(options.size)
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = optionColumnsFor(options.size),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =
@@ -135,9 +134,8 @@ fun MultiOptionsGrid(
     onToggle: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val columns = optionColumnsFor(options.size)
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = optionColumnsFor(options.size),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =

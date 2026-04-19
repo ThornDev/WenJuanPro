@@ -5,6 +5,7 @@ import ai.wenjuanpro.app.feature.resume.ResumeEffect
 import ai.wenjuanpro.app.feature.resume.ResumeIntent
 import ai.wenjuanpro.app.feature.resume.ResumeUiState
 import ai.wenjuanpro.app.feature.resume.ResumeViewModel
+import ai.wenjuanpro.app.ui.components.ContentConstraint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -59,8 +60,9 @@ fun ResumeScreen(
         }
     }
 
+    ContentConstraint(modifier = modifier) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
             .testTag(ResumeScreenTags.ROOT),
@@ -154,5 +156,6 @@ fun ResumeScreen(
                 )
             }
         }
+    }
     }
 }

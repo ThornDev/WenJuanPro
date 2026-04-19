@@ -75,12 +75,7 @@ fun WelcomeContent(
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.testTag(WelcomeScreenTags.ROOT)) { innerPadding ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-        ) {
+        ai.wenjuanpro.app.ui.components.ContentConstraint(modifier = Modifier.padding(innerPadding)) {
             when (state) {
                 WelcomeConfirmUiState.Loading -> LoadingBody()
                 is WelcomeConfirmUiState.Ready -> ReadyBody(state = state, onIntent = onIntent)

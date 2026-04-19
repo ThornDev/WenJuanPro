@@ -120,11 +120,11 @@ fun PermissionContent(
             TopAppBar(title = { Text(stringResource(R.string.app_name)) })
         },
     ) { innerPadding ->
+        ai.wenjuanpro.app.ui.components.ContentConstraint(modifier = Modifier.padding(innerPadding)) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
                     .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -224,6 +224,7 @@ fun PermissionContent(
 
                 PermissionUiState.Granted -> Unit
             }
+        }
         }
     }
 }

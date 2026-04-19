@@ -131,12 +131,7 @@ fun ConfigListContent(
             )
         },
     ) { innerPadding ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-        ) {
+        ai.wenjuanpro.app.ui.components.ContentConstraint(modifier = Modifier.padding(innerPadding)) {
             when (state) {
                 ConfigListUiState.Loading -> LoadingBody()
                 ConfigListUiState.Empty -> EmptyBody(onIntent = onIntent)

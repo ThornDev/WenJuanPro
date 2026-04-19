@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +55,9 @@ fun MemoryQuestionContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(0.9f),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .widthIn(max = 480.dp),
         ) {
             val gridWidthDp = maxWidth
             val cellSizePx = with(LocalDensity.current) { (gridWidthDp / 8).toPx() }
