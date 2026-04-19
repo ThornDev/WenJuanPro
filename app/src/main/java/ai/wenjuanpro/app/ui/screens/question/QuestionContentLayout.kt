@@ -31,7 +31,15 @@ object QuestionContentTags {
     const val OPTIONS_GRID = "question_options_grid"
 }
 
-internal fun optionColumnsFor(count: Int): GridCells = GridCells.Adaptive(minSize = 160.dp)
+internal fun optionColumnsFor(
+    count: Int,
+    optionsPerRow: Int? = null,
+): GridCells =
+    if (optionsPerRow != null && optionsPerRow in 1..3) {
+        GridCells.Fixed(optionsPerRow)
+    } else {
+        GridCells.Adaptive(minSize = 160.dp)
+    }
 
 @Composable
 fun StemBlock(
@@ -94,10 +102,11 @@ fun OptionsGrid(
     options: List<OptionContent>,
     selectedIndex: Int?,
     onOptionClick: (Int) -> Unit,
+    optionsPerRow: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
-        columns = optionColumnsFor(options.size),
+        columns = optionColumnsFor(options.size, optionsPerRow),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =
@@ -127,10 +136,11 @@ fun MultiOptionsGrid(
     options: List<OptionContent>,
     selectedIndices: Set<Int>,
     onToggle: (Int) -> Unit,
+    optionsPerRow: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
-        columns = optionColumnsFor(options.size),
+        columns = optionColumnsFor(options.size, optionsPerRow),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =

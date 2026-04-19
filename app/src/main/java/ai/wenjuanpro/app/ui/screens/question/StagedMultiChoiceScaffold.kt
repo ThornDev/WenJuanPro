@@ -116,6 +116,7 @@ fun StagedMultiChoiceScaffold(
                                 options = state.options,
                                 selectedIndices = state.selectedIndices,
                                 onToggle = { onIntent(QuestionIntent.ToggleOption(it)) },
+                                optionsPerRow = state.optionsPerRow,
                             )
                         }
                         if (state.showSubmitButton) {

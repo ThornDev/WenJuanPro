@@ -41,6 +41,7 @@ sealed interface Question {
         val scores: List<Int>,
         val showSubmitButton: Boolean = true,
         val autoAdvance: Boolean = false,
+        val optionsPerRow: Int? = null,
     ) : Question
 
     data class MultiChoice(
@@ -53,6 +54,7 @@ sealed interface Question {
         val correctIndices: Set<Int>,
         val scores: List<Int>,
         val showSubmitButton: Boolean = true,
+        val optionsPerRow: Int? = null,
     ) : Question
 
     data class Memory(

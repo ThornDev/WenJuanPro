@@ -455,6 +455,7 @@ class ConfigParser
             val scores = parseScores(sourceName, section, options.size, errors) ?: return null
             val showSubmit = parseShowSubmit(section)
             val autoAdvance = parseAutoAdvance(section)
+            val optionsPerRow = parseOptionsPerRow(sourceName, section, errors)
             return Question.SingleChoice(
                 qid = section.qid,
                 mode = mode,
@@ -466,6 +467,7 @@ class ConfigParser
                 scores = scores,
                 showSubmitButton = showSubmit,
                 autoAdvance = autoAdvance,
+                optionsPerRow = optionsPerRow,
             )
         }
 
@@ -517,6 +519,7 @@ class ConfigParser
             }
             val scores = parseScores(sourceName, section, options.size, errors) ?: return null
             val showSubmit = parseShowSubmit(section)
+            val optionsPerRow = parseOptionsPerRow(sourceName, section, errors)
             return Question.MultiChoice(
                 qid = section.qid,
                 mode = mode,
@@ -527,6 +530,7 @@ class ConfigParser
                 correctIndices = ints.toSet(),
                 scores = scores,
                 showSubmitButton = showSubmit,
+                optionsPerRow = optionsPerRow,
             )
         }
 
@@ -775,6 +779,25 @@ class ConfigParser
                 "true", "1", "yes", "on" -> true
                 else -> false
             }
+        }
+
+        private fun parseOptionsPerRow(
+            sourceName: String,
+            section: Section,
+            errors: MutableList<ParseError>,
+        ): Int? {
+            val entry = section.fields["optionsPerRow"] ?: return null
+            val v = entry.value.trim().toIntOrNull()
+            if (v == null || v !in 1..3) {
+                errors.add(
+                    invalidField(
+                        sourceName, section.qid, entry.line, "optionsPerRow",
+                        "每行选项个数非法：必须为 1-3 之间的整数",
+                    ),
+                )
+                return null
+            }
+            return v
         }
 
         // ---------------------------------------------------------------------

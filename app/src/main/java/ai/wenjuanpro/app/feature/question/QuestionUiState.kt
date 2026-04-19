@@ -30,6 +30,7 @@ sealed interface QuestionUiState {
         val selectedIndex: Int? = null,
         val submitEnabled: Boolean = false,
         val showSubmitButton: Boolean = true,
+        val optionsPerRow: Int? = null,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -44,6 +45,7 @@ sealed interface QuestionUiState {
         val selectedIndex: Int? = null,
         val submitEnabled: Boolean = false,
         val showSubmitButton: Boolean = true,
+        val optionsPerRow: Int? = null,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -57,6 +59,7 @@ sealed interface QuestionUiState {
         val selectedIndices: Set<Int> = emptySet(),
         val submitEnabled: Boolean = false,
         val showSubmitButton: Boolean = true,
+        val optionsPerRow: Int? = null,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -71,6 +74,7 @@ sealed interface QuestionUiState {
         val selectedIndices: Set<Int> = emptySet(),
         val submitEnabled: Boolean = false,
         val showSubmitButton: Boolean = true,
+        val optionsPerRow: Int? = null,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState

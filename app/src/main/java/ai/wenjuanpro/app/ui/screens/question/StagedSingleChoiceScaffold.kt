@@ -116,6 +116,7 @@ fun StagedSingleChoiceScaffold(
                                 options = state.options,
                                 selectedIndex = state.selectedIndex,
                                 onOptionClick = { onIntent(QuestionIntent.SelectOption(it)) },
+                                optionsPerRow = state.optionsPerRow,
                             )
                         }
                         if (state.showSubmitButton) {

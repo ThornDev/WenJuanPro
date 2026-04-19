@@ -455,6 +455,7 @@ class QuestionViewModel
                             selectedIndex = state.selectedIndex,
                             submitEnabled = state.selectedIndex != null,
                             showSubmitButton = state.question.showSubmitButton,
+                            optionsPerRow = state.question.optionsPerRow,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -476,6 +477,7 @@ class QuestionViewModel
                             selectedIndex = null,
                             submitEnabled = false,
                             showSubmitButton = state.question.showSubmitButton,
+                            optionsPerRow = state.question.optionsPerRow,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -496,6 +498,7 @@ class QuestionViewModel
                             selectedIndex = state.selectedIndex,
                             submitEnabled = state.selectedIndex != null,
                             showSubmitButton = state.question.showSubmitButton,
+                            optionsPerRow = state.question.optionsPerRow,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -515,6 +518,7 @@ class QuestionViewModel
                             selectedIndices = state.selectedIndices,
                             submitEnabled = state.selectedIndices.isNotEmpty(),
                             showSubmitButton = state.question.showSubmitButton,
+                            optionsPerRow = state.question.optionsPerRow,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -536,6 +540,7 @@ class QuestionViewModel
                             selectedIndices = emptySet(),
                             submitEnabled = false,
                             showSubmitButton = state.question.showSubmitButton,
+                            optionsPerRow = state.question.optionsPerRow,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -556,6 +561,7 @@ class QuestionViewModel
                             selectedIndices = state.selectedIndices,
                             submitEnabled = state.selectedIndices.isNotEmpty(),
                             showSubmitButton = state.question.showSubmitButton,
+                            optionsPerRow = state.question.optionsPerRow,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
