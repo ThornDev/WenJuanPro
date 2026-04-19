@@ -39,6 +39,7 @@ sealed interface Question {
         val options: List<OptionContent>,
         val correctIndex: Int,
         val scores: List<Int>,
+        val showSubmitButton: Boolean = true,
     ) : Question
 
     data class MultiChoice(
@@ -50,6 +51,7 @@ sealed interface Question {
         val options: List<OptionContent>,
         val correctIndices: Set<Int>,
         val scores: List<Int>,
+        val showSubmitButton: Boolean = true,
     ) : Question
 
     data class Memory(

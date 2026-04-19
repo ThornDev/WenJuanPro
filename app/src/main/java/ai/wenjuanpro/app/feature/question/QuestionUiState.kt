@@ -29,6 +29,7 @@ sealed interface QuestionUiState {
         val options: List<OptionContent>,
         val selectedIndex: Int? = null,
         val submitEnabled: Boolean = false,
+        val showSubmitButton: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -42,6 +43,7 @@ sealed interface QuestionUiState {
         val stage: Stage,
         val selectedIndex: Int? = null,
         val submitEnabled: Boolean = false,
+        val showSubmitButton: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -54,6 +56,7 @@ sealed interface QuestionUiState {
         val options: List<OptionContent>,
         val selectedIndices: Set<Int> = emptySet(),
         val submitEnabled: Boolean = false,
+        val showSubmitButton: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -67,6 +70,7 @@ sealed interface QuestionUiState {
         val stage: Stage,
         val selectedIndices: Set<Int> = emptySet(),
         val submitEnabled: Boolean = false,
+        val showSubmitButton: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState

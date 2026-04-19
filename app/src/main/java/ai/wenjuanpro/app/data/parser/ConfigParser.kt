@@ -453,6 +453,7 @@ class ConfigParser
                 return null
             }
             val scores = parseScores(sourceName, section, options.size, errors) ?: return null
+            val showSubmit = parseShowSubmit(section)
             return Question.SingleChoice(
                 qid = section.qid,
                 mode = mode,
@@ -462,6 +463,7 @@ class ConfigParser
                 options = options,
                 correctIndex = correctIndex,
                 scores = scores,
+                showSubmitButton = showSubmit,
             )
         }
 
@@ -512,6 +514,7 @@ class ConfigParser
                 }
             }
             val scores = parseScores(sourceName, section, options.size, errors) ?: return null
+            val showSubmit = parseShowSubmit(section)
             return Question.MultiChoice(
                 qid = section.qid,
                 mode = mode,
@@ -521,6 +524,7 @@ class ConfigParser
                 options = options,
                 correctIndices = ints.toSet(),
                 scores = scores,
+                showSubmitButton = showSubmit,
             )
         }
 
@@ -753,6 +757,14 @@ class ConfigParser
                 return null
             }
             return parsed.filterNotNull()
+        }
+
+        private fun parseShowSubmit(section: Section): Boolean {
+            val raw = section.fields["showSubmit"]?.value?.trim()?.lowercase() ?: return true
+            return when (raw) {
+                "false", "0", "no", "hide", "off" -> false
+                else -> true
+            }
         }
 
         // ---------------------------------------------------------------------

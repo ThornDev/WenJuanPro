@@ -447,6 +447,7 @@ class QuestionViewModel
                             options = state.question.options,
                             selectedIndex = state.selectedIndex,
                             submitEnabled = state.selectedIndex != null,
+                            showSubmitButton = state.question.showSubmitButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -467,6 +468,7 @@ class QuestionViewModel
                             stage = QuestionUiState.Stage.STEM,
                             selectedIndex = null,
                             submitEnabled = false,
+                            showSubmitButton = state.question.showSubmitButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -486,6 +488,7 @@ class QuestionViewModel
                             stage = QuestionUiState.Stage.OPTIONS,
                             selectedIndex = state.selectedIndex,
                             submitEnabled = state.selectedIndex != null,
+                            showSubmitButton = state.question.showSubmitButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -504,6 +507,7 @@ class QuestionViewModel
                             options = state.question.options,
                             selectedIndices = state.selectedIndices,
                             submitEnabled = state.selectedIndices.isNotEmpty(),
+                            showSubmitButton = state.question.showSubmitButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -524,6 +528,7 @@ class QuestionViewModel
                             stage = QuestionUiState.Stage.STEM,
                             selectedIndices = emptySet(),
                             submitEnabled = false,
+                            showSubmitButton = state.question.showSubmitButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -543,6 +548,7 @@ class QuestionViewModel
                             stage = QuestionUiState.Stage.OPTIONS,
                             selectedIndices = state.selectedIndices,
                             submitEnabled = state.selectedIndices.isNotEmpty(),
+                            showSubmitButton = state.question.showSubmitButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
