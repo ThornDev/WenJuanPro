@@ -4,13 +4,21 @@ enum class PresentMode { ALL_IN_ONE, STAGED }
 
 sealed interface StemContent {
     data class Text(val text: String) : StemContent
-    data class Image(val fileName: String) : StemContent
+    data class Image(
+        val fileName: String,
+        val widthDp: Int? = null,
+        val heightDp: Int? = null,
+    ) : StemContent
     data class Mixed(val parts: List<StemContent>) : StemContent
 }
 
 sealed interface OptionContent {
     data class Text(val text: String) : OptionContent
-    data class Image(val fileName: String) : OptionContent
+    data class Image(
+        val fileName: String,
+        val widthDp: Int? = null,
+        val heightDp: Int? = null,
+    ) : OptionContent
     data class Mixed(val parts: List<OptionContent>) : OptionContent
 }
 

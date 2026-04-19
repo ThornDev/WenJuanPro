@@ -47,6 +47,8 @@ fun OptionCard(
     index: Int,
     text: String?,
     imageAssetName: String?,
+    imageWidthDp: Int? = null,
+    imageHeightDp: Int? = null,
     isSelected: Boolean,
     isMulti: Boolean,
     onClick: () -> Unit,
@@ -112,11 +114,13 @@ fun OptionCard(
                 }
                 if (imageAssetName != null) {
                     Spacer(Modifier.width(8.dp))
+                    val imgW = (imageWidthDp ?: 48).dp
+                    val imgH = (imageHeightDp ?: 48).dp
                     Box(
                         modifier =
                             Modifier
-                                .heightIn(min = 48.dp)
-                                .width(48.dp)
+                                .heightIn(min = imgH)
+                                .width(imgW)
                                 .background(PlaceholderGray, shape = RoundedCornerShape(4.dp))
                                 .testTag(OptionCardTags.IMAGE_PLACEHOLDER_PREFIX + index),
                         contentAlignment = Alignment.Center,

@@ -595,11 +595,11 @@ class ConfigParser
             val pieces =
                 parts.map { raw ->
                     if (raw.startsWith(IMAGE_PREFIX)) {
-                        val fileName = raw.removePrefix(IMAGE_PREFIX)
-                        if (!validateAsset(sourceName, section, field.line, "stem", fileName, errors)) {
+                        val ref = parseImageRef(raw)
+                        if (!validateAsset(sourceName, section, field.line, "stem", ref.fileName, errors)) {
                             return null
                         }
-                        StemContent.Image(fileName)
+                        StemContent.Image(ref.fileName, ref.widthDp, ref.heightDp)
                     } else {
                         StemContent.Text(raw)
                     }
@@ -650,11 +650,11 @@ class ConfigParser
             if (!raw.contains(OPTION_MIX_DELIMITER)) {
                 // No sub-delimiter → pure text or pure image (original behavior)
                 return if (raw.startsWith(IMAGE_PREFIX)) {
-                    val fileName = raw.removePrefix(IMAGE_PREFIX)
-                    if (!validateAsset(sourceName, section, line, "options", fileName, errors)) {
+                    val ref = parseImageRef(raw)
+                    if (!validateAsset(sourceName, section, line, "options", ref.fileName, errors)) {
                         return null
                     }
-                    OptionContent.Image(fileName)
+                    OptionContent.Image(ref.fileName, ref.widthDp, ref.heightDp)
                 } else {
                     OptionContent.Text(raw)
                 }
@@ -672,16 +672,39 @@ class ConfigParser
             }
             val pieces = segments.map { seg ->
                 if (seg.startsWith(IMAGE_PREFIX)) {
-                    val fileName = seg.removePrefix(IMAGE_PREFIX)
-                    if (!validateAsset(sourceName, section, line, "options", fileName, errors)) {
+                    val ref = parseImageRef(seg)
+                    if (!validateAsset(sourceName, section, line, "options", ref.fileName, errors)) {
                         return null
                     }
-                    OptionContent.Image(fileName)
+                    OptionContent.Image(ref.fileName, ref.widthDp, ref.heightDp)
                 } else {
                     OptionContent.Text(seg)
                 }
             }
             return if (pieces.size == 1) pieces[0] else OptionContent.Mixed(pieces)
+        }
+
+        /**
+         * Parses an image reference like `img:file.png`, `img:file.png:400`,
+         * or `img:file.png:400x300`. Returns (fileName, widthDp?, heightDp?).
+         */
+        private data class ImageRef(
+            val fileName: String,
+            val widthDp: Int? = null,
+            val heightDp: Int? = null,
+        )
+
+        private fun parseImageRef(raw: String): ImageRef {
+            val body = raw.removePrefix(IMAGE_PREFIX)
+            val match = IMAGE_SIZE_REGEX.matchEntire(body)
+            return if (match != null) {
+                val fileName = match.groupValues[1]
+                val w = match.groupValues[2].toIntOrNull()
+                val h = match.groupValues[3].takeIf { it.isNotEmpty() }?.toIntOrNull()
+                ImageRef(fileName, w, h)
+            } else {
+                ImageRef(body)
+            }
         }
 
         private fun validateAsset(
@@ -777,6 +800,7 @@ class ConfigParser
             private val SECTION_LIKE_REGEX = Regex("^\\[.*\\]$")
             private val HEADER_ENTRY_REGEX = Regex("^#\\s*([^:]+?)\\s*:\\s*(.*)$")
             private val CONFIG_ID_REGEX = Regex("^[A-Za-z0-9_-]{1,64}$")
+            private val IMAGE_SIZE_REGEX = Regex("^(.+\\.\\w+):(\\d+)(?:x(\\d+))?$")
             private val TYPE_VALUES = setOf("single", "multi", "memory")
             private val MODE_VALUES = setOf("all_in_one", "staged")
         }

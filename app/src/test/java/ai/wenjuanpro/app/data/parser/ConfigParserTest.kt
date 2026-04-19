@@ -952,4 +952,127 @@ class ConfigParserTest {
         assertTrue(opt1.parts[1] is OptionContent.Image)
         assertTrue(opt1.parts[2] is OptionContent.Text)
     }
+
+    // ---------- Image Size Syntax ----------
+
+    @Test
+    fun `image with width and height in stem`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: img:chart.png:400x300
+            options: A|B|C|D
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue(result.errors.isEmpty())
+        val q = result.config!!.questions[0] as Question.SingleChoice
+        val stem = q.stem as StemContent.Image
+        assertEquals("chart.png", stem.fileName)
+        assertEquals(400, stem.widthDp)
+        assertEquals(300, stem.heightDp)
+    }
+
+    @Test
+    fun `image with width only in stem`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: img:photo.png:600
+            options: A|B|C|D
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue(result.errors.isEmpty())
+        val stem = (result.config!!.questions[0] as Question.SingleChoice).stem as StemContent.Image
+        assertEquals("photo.png", stem.fileName)
+        assertEquals(600, stem.widthDp)
+        assertNull(stem.heightDp)
+    }
+
+    @Test
+    fun `image with size in option`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: 题干
+            options: img:a.png:120x120|img:b.png:120x120|C|D
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue(result.errors.isEmpty())
+        val q = result.config!!.questions[0] as Question.SingleChoice
+        val opt1 = q.options[0] as OptionContent.Image
+        assertEquals("a.png", opt1.fileName)
+        assertEquals(120, opt1.widthDp)
+        assertEquals(120, opt1.heightDp)
+    }
+
+    @Test
+    fun `image with size in mixed option`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: 题干
+            options: A. +img:opt_a.png:80x80|B. +img:opt_b.png:80|C|D
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue(result.errors.isEmpty())
+        val q = result.config!!.questions[0] as Question.SingleChoice
+        val opt1 = q.options[0] as OptionContent.Mixed
+        val img1 = opt1.parts[1] as OptionContent.Image
+        assertEquals("opt_a.png", img1.fileName)
+        assertEquals(80, img1.widthDp)
+        assertEquals(80, img1.heightDp)
+        // opt B: width only
+        val opt2 = q.options[1] as OptionContent.Mixed
+        val img2 = opt2.parts[1] as OptionContent.Image
+        assertEquals(80, img2.widthDp)
+        assertNull(img2.heightDp)
+    }
+
+    @Test
+    fun `image without size uses defaults`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: img:photo.png
+            options: img:a.png|B|C|D
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue(result.errors.isEmpty())
+        val stem = (result.config!!.questions[0] as Question.SingleChoice).stem as StemContent.Image
+        assertNull(stem.widthDp)
+        assertNull(stem.heightDp)
+        val opt = (result.config!!.questions[0] as Question.SingleChoice).options[0] as OptionContent.Image
+        assertNull(opt.widthDp)
+        assertNull(opt.heightDp)
+    }
 }

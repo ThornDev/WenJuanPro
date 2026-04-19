@@ -74,8 +74,8 @@ score: 10|0|0|0
 type: single
 mode: all_in_one
 durationMs: 25000
-stem: img:q8_stem.png
-options: img:q8_a.png|img:q8_b.png|img:q8_c.png|img:q8_d.png
+stem: img:q8_stem.png:600x200
+options: img:q8_a.png:100x100|img:q8_b.png:100x100|img:q8_c.png:100x100|img:q8_d.png:100x100
 correct: 3
 score: 0|0|10|0
 
@@ -154,8 +154,8 @@ score: 1|0|1|0
 type: single
 mode: all_in_one
 durationMs: 30000
-stem: img:animal_photo.png
-options: img:cat_icon.png+猫科动物|img:dog_icon.png+犬科动物|img:bird_icon.png+鸟类|img:fish_icon.png+鱼类
+stem: img:animal_photo.png:500x200
+options: img:cat_icon.png:80x80+猫科动物|img:dog_icon.png:80x80+犬科动物|img:bird_icon.png:80x80+鸟类|img:fish_icon.png:80x80+鱼类
 correct: 1
 score: 10|0|0|0
 

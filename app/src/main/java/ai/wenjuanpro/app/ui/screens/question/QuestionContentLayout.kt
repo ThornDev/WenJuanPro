@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -55,7 +56,11 @@ private fun renderStem(stem: StemContent) {
                 modifier = Modifier.testTag(QuestionContentTags.STEM_TEXT),
             )
         is StemContent.Image ->
-            ImagePlaceholder(label = stem.fileName)
+            ImagePlaceholder(
+                label = stem.fileName,
+                widthDp = stem.widthDp,
+                heightDp = stem.heightDp,
+            )
         is StemContent.Mixed -> {
             stem.parts.forEachIndexed { idx, part ->
                 if (idx > 0) Spacer(Modifier.height(8.dp))
@@ -66,12 +71,17 @@ private fun renderStem(stem: StemContent) {
 }
 
 @Composable
-private fun ImagePlaceholder(label: String) {
+private fun ImagePlaceholder(
+    label: String,
+    widthDp: Int? = null,
+    heightDp: Int? = null,
+) {
+    val widthMod = if (widthDp != null) Modifier.width(widthDp.dp) else Modifier.fillMaxWidth()
+    val heightMod = Modifier.height((heightDp ?: 160).dp)
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(160.dp)
+            widthMod
+                .then(heightMod)
                 .background(PlaceholderGray, shape = RoundedCornerShape(8.dp))
                 .testTag(QuestionContentTags.STEM_IMAGE_PLACEHOLDER),
         contentAlignment = Alignment.Center,
@@ -108,6 +118,8 @@ fun OptionsGrid(
                 index = index + 1,
                 text = display.text,
                 imageAssetName = display.imageAssetName,
+                imageWidthDp = display.imageWidthDp,
+                imageHeightDp = display.imageHeightDp,
                 isSelected = selectedIndex == index + 1,
                 isMulti = false,
                 onClick = { onOptionClick(index + 1) },
@@ -140,6 +152,8 @@ fun MultiOptionsGrid(
                 index = index + 1,
                 text = display.text,
                 imageAssetName = display.imageAssetName,
+                imageWidthDp = display.imageWidthDp,
+                imageHeightDp = display.imageHeightDp,
                 isSelected = (index + 1) in selectedIndices,
                 isMulti = true,
                 onClick = { onToggle(index + 1) },
@@ -151,17 +165,29 @@ fun MultiOptionsGrid(
 private data class OptionDisplay(
     val text: String?,
     val imageAssetName: String?,
+    val imageWidthDp: Int? = null,
+    val imageHeightDp: Int? = null,
 )
 
 private fun displayOption(content: OptionContent): OptionDisplay =
     when (content) {
         is OptionContent.Text -> OptionDisplay(text = content.text, imageAssetName = null)
-        is OptionContent.Image -> OptionDisplay(text = null, imageAssetName = content.fileName)
+        is OptionContent.Image -> OptionDisplay(
+            text = null,
+            imageAssetName = content.fileName,
+            imageWidthDp = content.widthDp,
+            imageHeightDp = content.heightDp,
+        )
         is OptionContent.Mixed -> {
             val text =
                 content.parts.firstNotNullOfOrNull { (it as? OptionContent.Text)?.text }
             val image =
-                content.parts.firstNotNullOfOrNull { (it as? OptionContent.Image)?.fileName }
-            OptionDisplay(text = text, imageAssetName = image)
+                content.parts.firstNotNullOfOrNull { it as? OptionContent.Image }
+            OptionDisplay(
+                text = text,
+                imageAssetName = image?.fileName,
+                imageWidthDp = image?.widthDp,
+                imageHeightDp = image?.heightDp,
+            )
         }
     }
