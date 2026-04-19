@@ -16,6 +16,9 @@
     <string name="permission_icon_cd">存储权限图标</string>
 
     <string name="config_list_title">请选择测评集</string>
+    <string name="config_list_hero_greeting">欢迎使用</string>
+    <string name="config_list_hero_brand">问卷测评系统</string>
+    <string name="config_list_hero_hint">请选择下方测评集开始答题</string>
     <string name="config_list_refresh_cd">刷新</string>
     <string name="config_list_status_valid">有效</string>
     <string name="config_list_status_invalid">损坏</string>
