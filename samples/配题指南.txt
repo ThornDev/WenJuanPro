@@ -1,0 +1,368 @@
+╔══════════════════════════════════════════════════════════╗
+║         WenJuanPro 题库配置完全指南 (v1.0)              ║
+║         最后更新: 2026-04-19                             ║
+╚══════════════════════════════════════════════════════════╝
+
+==============================
+一、设备目录结构
+==============================
+
+/sdcard/WenJuanPro/
+├── config/          研究员放 TXT 题库文件（App 只读）
+│   └── xxx.txt
+├── assets/          研究员放图片素材 PNG/JPG（App 只读）
+│   └── xxx.png
+├── results/         App 自动写入答题结果（研究员回收）
+│   └── {设备ID}_{学号}_{configId}_{时间戳}.txt
+└── .diag/           App 诊断日志（不含答题内容）
+    └── app.log
+
+
+==============================
+二、TXT 配置文件基本规则
+==============================
+
+1. 编码: 必须 UTF-8（无 BOM 最佳；有 BOM 会告警但不报错）
+2. 换行: \n 或 \r\n 均可
+3. 注释: # 开头的行会被忽略（Header 区域除外）
+4. 空行: 任意位置的空行会被忽略
+5. 字段格式: key: value（冒号后的空格可选）
+6. 至少包含 1 道题
+7. 题目按 [Q1] → [Q2] → ... 的顺序呈现给学生
+8. 不同题型（单选/多选/记忆）可以在同一份文件中任意穿插
+
+
+==============================
+三、文件头（Header）
+==============================
+
+格式: # key: value
+
+必填字段:
+  # configId: cog-mem-2026q3    唯一标识，只允许字母、数字、-、_，最长64字符
+  # title: 认知记忆测评 v1       测评名称，显示在选择页
+
+注意:
+  - 如果省略 configId 但提供了 title，则自动用文件名（去掉 .txt）作为 configId
+  - 如果 configId 和 title 都没写，会报错
+
+
+==============================
+四、题型一：单选题 (type: single)
+==============================
+
+-------------- 模式A: 同屏模式 (all_in_one) ---------------
+
+题干和选项同时出现，共用一个倒计时。
+
+[Q1]
+type: single
+mode: all_in_one
+durationMs: 30000              倒计时（毫秒），范围 1000~600000
+stem: 以下哪个是哺乳动物？     题干文字
+options: 鲨鱼|海豚|金鱼|海龟   选项，竖线分隔，至少2个
+correct: 2                     正确答案索引（从1开始）
+score: 0|10|0|0                每个选项的得分，竖线分隔，个数必须等于选项数
+
+-------------- 模式B: 分阶段模式 (staged) ------------------
+
+先看题干（计时），到时间后题干消失、选项出现（新计时）。
+
+[Q2]
+type: single
+mode: staged
+stemDurationMs: 8000           题干阶段倒计时（毫秒）
+optionsDurationMs: 20000       选项阶段倒计时（毫秒）
+stem: 请仔细阅读后回答问题
+options: 选项A|选项B|选项C|选项D
+correct: 1
+score: 10|0|0|0
+
+
+==============================
+五、题型二：多选题 (type: multi)
+==============================
+
+和单选题的区别:
+  - correct 字段为逗号分隔的多个索引，必须升序且不重复
+  - 学生可以选多个选项
+
+[Q3]
+type: multi
+mode: all_in_one
+durationMs: 25000
+stem: 以下哪些属于中国四大发明？（多选）
+options: 造纸术|蒸汽机|指南针|火药|印刷术|电灯
+correct: 1,3,4,5               正确答案索引，逗号分隔，必须升序
+score: 1|0|1|1|1|0             每个选项的得分
+
+[Q4]
+type: multi
+mode: staged
+stemDurationMs: 10000
+optionsDurationMs: 25000
+stem: 请阅读列表后选择偶数
+options: 2|5|8|11|14|17
+correct: 1,3,5
+score: 1|0|1|0|1|0
+
+
+==============================
+六、题型三：记忆闪烁题 (type: memory)
+==============================
+
+8x8 点阵中 10 个蓝点按随机顺序闪烁，学生需按闪烁顺序点击复现。
+
+[Q5]
+type: memory
+mode: all_in_one
+optionsDurationMs: 60000        复现阶段倒计时（闪烁阶段不计时）
+dotsPositions: 3,7,12,19,22,30,37,44,51,58    10个蓝点的位置
+
+可选参数（不写则用默认值）:
+flashDurationMs: 1000           每个点闪烁持续时长（默认1000ms）
+flashIntervalMs: 500            两次闪烁之间的间隔（默认500ms）
+
+点阵索引说明（8x8=64格，行优先编号）:
+  第0行:  0  1  2  3  4  5  6  7
+  第1行:  8  9 10 11 12 13 14 15
+  第2行: 16 17 18 19 20 21 22 23
+  第3行: 24 25 26 27 28 29 30 31
+  第4行: 32 33 34 35 36 37 38 39
+  第5行: 40 41 42 43 44 45 46 47
+  第6行: 48 49 50 51 52 53 54 55
+  第7行: 56 57 58 59 60 61 62 63
+
+规则:
+  - 必须恰好 10 个点
+  - 每个索引 0~63
+  - 不能重复
+  - durationMs 字段不需要（记忆题固定用 optionsDurationMs）
+  - mode 固定写 all_in_one（记忆题不支持 staged）
+
+得分规则:
+  - 得分 = 学生点击顺序与闪烁顺序的前缀匹配数
+  - 例: 闪烁[3,7,12,...]，学生点[3,7,19,...] → 前2位匹配 → 得分2
+  - 未点击 → 得分0
+
+
+==============================
+七、图片引用规则
+==============================
+
+图片文件放在 /sdcard/WenJuanPro/assets/ 目录下。
+使用 img:文件名.png 语法引用。
+解析时会检查文件是否存在，不存在则报错。
+
+----- 7.1 题干中使用图片 -----
+
+题干用竖线 | 分隔多段，每段自动识别文字或图片：
+
+纯文字题干:
+  stem: 以下哪个是正确答案？
+
+纯图片题干:
+  stem: img:question_photo.png
+
+文字 + 图片混排题干:
+  stem: 请观察下图|img:chart.png|然后回答问题
+
+多张图片 + 文字:
+  stem: 对比以下两幅图|img:before.png|img:after.png|它们有什么区别？
+
+图片在前:
+  stem: img:diagram.png|请根据上图选择正确答案
+
+----- 7.2 选项中使用图片 -----
+
+选项之间用竖线 | 分隔（和文字选项一样）。
+单个选项内部用加号 + 分隔文字和图片段。
+
+纯文字选项:
+  options: 苹果|香蕉|葡萄|西瓜
+
+纯图片选项:
+  options: img:opt_a.png|img:opt_b.png|img:opt_c.png|img:opt_d.png
+
+文字标签 + 图片（推荐用于带序号的图片选项）:
+  options: A. +img:opt_a.png|B. +img:opt_b.png|C. +img:opt_c.png|D. +img:opt_d.png
+
+图片 + 文字说明:
+  options: img:cat.png+猫科动物|img:dog.png+犬科动物|img:bird.png+鸟类|img:fish.png+鱼类
+
+文字 + 图片 + 文字:
+  options: A. +img:icon_a.png+猫科动物|B. +img:icon_b.png+犬科动物
+
+混搭（部分纯文字、部分有图片）:
+  options: 苹果|img:banana.png|C. +img:grape.png|西瓜
+
+总结:
+  | 分隔不同选项（选项间分隔符）
+  + 分隔同一选项内的文字和图片段（选项内分隔符）
+  img: 标记图片引用
+
+----- 7.3 图片显示大小 -----
+
+当前版本图片大小由 App 自动控制:
+  - 题干图片: 宽度占满屏幕，高度 160dp（等比缩放）
+  - 选项图片: 48x48dp 缩略图
+  - 不支持在 TXT 中指定图片尺寸
+  - 建议: 题干图片宽度 800~1200px；选项图片 200x200px 正方形
+
+----- 7.4 支持的图片格式 -----
+
+  - PNG（推荐，支持透明背景）
+  - JPG/JPEG
+  - 文件名区分大小写: img:Photo.PNG 和 img:photo.png 是不同文件
+  - 文件名不能包含空格和特殊字符
+
+
+==============================
+八、倒计时规则
+==============================
+
+  - 单位: 毫秒（ms）
+  - 范围: 1000 ~ 600000（即 1秒 ~ 10分钟）
+  - 常用换算:
+    10秒  = 10000
+    30秒  = 30000
+    1分钟 = 60000
+    2分钟 = 120000
+    5分钟 = 300000
+    10分钟= 600000
+  - 超出范围会报错
+
+
+==============================
+九、答题结果文件格式
+==============================
+
+文件名: {设备ID}_{学号}_{configId}_{yyyyMMdd-HHmmss}.txt
+
+内容结构:
+
+  deviceId: a1b2c3d4
+  studentId: S001
+  configId: cog-mem-2026q3
+  sessionStart: 20260419-103045
+  appVersion: 0.1.0
+  ---
+  Q1|single|all_in_one|-|24530|2|1|0|done
+  Q2|multi|staged|10000|8420|1,3|1,2|1|done
+  Q3|memory|all_in_one|-|42300|3,7,12|7,3,44,19,58,12,30,22,37,51|2|done
+  Q4|single|all_in_one|-|30000||2|0|not_answered
+
+每行9个字段（竖线分隔）:
+  qid       题目编号（Q1, Q2, ...）
+  type      题型（single / multi / memory）
+  mode      模式（all_in_one / staged）
+  stemMs    题干阶段用时（all_in_one 模式写 -）
+  optionsMs 选项/复现阶段用时（毫秒）
+  answer    学生答案
+              单选: "2"          （选项索引）
+              多选: "1,3"        （逗号分隔索引）
+              记忆: "3,7,12,..." （逗号分隔点击顺序）
+              未答: ""           （空字符串）
+  correct   正确答案（格式同 answer；记忆题为闪烁顺序）
+  score     得分
+  status    状态
+              done          正常完成
+              not_answered  超时未作答
+              error         系统异常
+
+
+==============================
+十、常见错误及排查
+==============================
+
+错误信息                              原因                          解决
+───────────────────────────────── ─────────────────────────── ──────────────
+文件编码非 UTF-8                      文件不是 UTF-8 编码           用记事本/VSCode 另存为 UTF-8
+缺少必填字段 title                    文件头没写 # title: xxx       补上
+configId 格式非法                     含中文/空格/特殊字符          只用字母数字-_
+倒计时时长非法                        超出 1000~600000 范围         检查毫秒值
+选项非法：不能包含空选项              选项间多了竖线 ||             检查选项分隔
+正确答案非法                          索引超出选项个数              correct 索引从1开始
+多选正确答案必须严格升序              写了 correct: 3,1             改为 1,3
+评分个数不匹配                        score 个数 ≠ 选项个数         补齐
+引用的图片不存在                      assets/ 下没有对应文件        检查文件名和路径
+记忆题点位非法                        不是10个 / 超出0-63 / 有重复  检查 dotsPositions
+重复的题号                            两个 [Q1]                     改为不同编号
+选项混排段不能为空                    选项中 + 前后为空             检查 + 分隔符
+
+
+==============================
+十一、完整综合示例
+==============================
+
+# configId: full-demo-2026
+# title: 完整功能演示测评
+
+[Q1]
+type: single
+mode: all_in_one
+durationMs: 20000
+stem: "床前明月光"的作者是谁？
+options: 杜甫|李白|白居易|王维
+correct: 2
+score: 5|0|0|0
+
+[Q2]
+type: single
+mode: staged
+stemDurationMs: 10000
+optionsDurationMs: 15000
+stem: 请先记住这段文字，然后回答问题。
+options: 选项A|选项B|选项C|选项D
+correct: 3
+score: 0|0|10|0
+
+[Q3]
+type: multi
+mode: all_in_one
+durationMs: 25000
+stem: 以下哪些是三原色？（多选）
+options: 红|绿|蓝|黄|紫
+correct: 1,2,3
+score: 1|1|1|0|0
+
+[Q4]
+type: single
+mode: all_in_one
+durationMs: 30000
+stem: img:q4_photo.png
+options: img:q4_a.png|img:q4_b.png|img:q4_c.png|img:q4_d.png
+correct: 2
+score: 0|10|0|0
+
+[Q5]
+type: single
+mode: all_in_one
+durationMs: 30000
+stem: 请观察下图中的图形规律|img:pattern.png|下一个图形应该是什么？
+options: A. +img:ans_a.png|B. +img:ans_b.png|C. +img:ans_c.png|D. +img:ans_d.png
+correct: 3
+score: 0|0|10|0
+
+[Q6]
+type: multi
+mode: all_in_one
+durationMs: 25000
+stem: 选出所有三角形（多选）
+options: img:tri1.png+等边三角形|img:circle.png+圆形|img:tri2.png+直角三角形|img:square.png+正方形
+correct: 1,3
+score: 1|0|1|0
+
+[Q7]
+type: memory
+mode: all_in_one
+optionsDurationMs: 60000
+dotsPositions: 3,7,12,19,22,30,37,44,51,58
+
+[Q8]
+type: memory
+mode: all_in_one
+optionsDurationMs: 45000
+dotsPositions: 0,9,18,27,36,45,54,63,14,49
+flashDurationMs: 800
+flashIntervalMs: 400
