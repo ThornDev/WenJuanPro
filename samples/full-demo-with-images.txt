@@ -1,0 +1,200 @@
+# configId: full-demo-with-images
+# title: 全题型图片演示测评
+
+# ================================================================
+# 第一部分：纯文字题目
+# ================================================================
+
+[Q1]
+type: single
+mode: all_in_one
+durationMs: 20000
+stem: "床前明月光"的作者是谁？
+options: 杜甫|李白|白居易|王维
+correct: 2
+score: 5|0|0|0
+
+[Q2]
+type: single
+mode: staged
+stemDurationMs: 8000
+optionsDurationMs: 15000
+stem: 请仔细阅读：光速约为每秒30万公里，从太阳到地球约需8分钟。以下哪个说法正确？
+options: 太阳距地球约1.5亿公里|太阳距地球约1500万公里|光速约每秒3万公里|太阳距地球约15亿公里
+correct: 1
+score: 10|0|0|0
+
+[Q3]
+type: multi
+mode: all_in_one
+durationMs: 25000
+stem: 以下哪些属于中国四大发明？（多选）
+options: 造纸术|蒸汽机|指南针|火药|印刷术|电灯
+correct: 1,3,4,5
+score: 1|0|1|1|1|0
+
+[Q4]
+type: multi
+mode: staged
+stemDurationMs: 10000
+optionsDurationMs: 20000
+stem: 请记住以下列表中的偶数：2、5、8、11、14、17。然后选择所有偶数。
+options: 2|5|8|11|14|17
+correct: 1,3,5
+score: 1|0|1|0|1|0
+
+# ================================================================
+# 第二部分：纯图片题干 + 纯文字选项
+# ================================================================
+
+[Q5]
+type: single
+mode: all_in_one
+durationMs: 30000
+stem: img:temp_chart.png
+options: 6月|7月|8月|9月
+correct: 3
+score: 0|0|10|0
+
+[Q6]
+type: single
+mode: staged
+stemDurationMs: 12000
+optionsDurationMs: 15000
+stem: img:q9_diagram.png
+options: 数据呈上升趋势|数据呈下降趋势|数据基本不变|无法判断
+correct: 1
+score: 10|0|0|0
+
+# ================================================================
+# 第三部分：纯图片题干 + 纯图片选项
+# ================================================================
+
+[Q7]
+type: single
+mode: all_in_one
+durationMs: 25000
+stem: img:q8_stem.png
+options: img:q8_a.png|img:q8_b.png|img:q8_c.png|img:q8_d.png
+correct: 3
+score: 0|0|10|0
+
+# ================================================================
+# 第四部分：文字+图片混排题干 + 纯文字选项
+# ================================================================
+
+[Q8]
+type: single
+mode: all_in_one
+durationMs: 30000
+stem: 下图展示了某城市2024年月均气温：|img:temp_chart.png|请问哪个月份平均气温最高？
+options: 6月|7月|8月|9月
+correct: 3
+score: 0|0|10|0
+
+[Q9]
+type: single
+mode: staged
+stemDurationMs: 15000
+optionsDurationMs: 20000
+stem: 请观察以下图形规律：|img:pattern_sequence.png|请选择下一个图形应该是什么形状？
+options: 正方形|菱形|五角星|圆形
+correct: 2
+score: 0|10|0|0
+
+[Q10]
+type: single
+mode: all_in_one
+durationMs: 25000
+stem: 对比以下两幅图：|img:before.png|img:after.png|图中发生了什么变化？
+options: 颜色变了|形状变了|大小变了|没有变化
+correct: 2
+score: 0|5|0|0
+
+# ================================================================
+# 第五部分：文字+图片混排题干 + 纯图片选项
+# ================================================================
+
+[Q11]
+type: single
+mode: all_in_one
+durationMs: 30000
+stem: 请观察下面的图形规律：|img:pattern_sequence.png|选择正确的下一个图形：
+options: img:pattern_a.png|img:pattern_b.png|img:pattern_c.png|img:pattern_d.png
+correct: 2
+score: 0|10|0|0
+
+# ================================================================
+# 第六部分：纯文字题干 + 文字标签+图片混排选项（用 + 分隔）
+# ================================================================
+
+[Q12]
+type: single
+mode: all_in_one
+durationMs: 25000
+stem: 哪幅图片中的动物会飞？
+options: A. +img:penguin.png|B. +img:eagle.png|C. +img:dolphin.png|D. +img:tiger.png
+correct: 2
+score: 0|5|0|0
+
+[Q13]
+type: multi
+mode: all_in_one
+durationMs: 25000
+stem: 请选出所有属于水果的选项（多选）
+options: A. +img:apple.png|B. +img:carrot.png|C. +img:banana.png|D. +img:potato.png
+correct: 1,3
+score: 1|0|1|0
+
+# ================================================================
+# 第七部分：图片题干 + 图片+文字说明混排选项
+# ================================================================
+
+[Q14]
+type: single
+mode: all_in_one
+durationMs: 30000
+stem: img:animal_photo.png
+options: img:cat_icon.png+猫科动物|img:dog_icon.png+犬科动物|img:bird_icon.png+鸟类|img:fish_icon.png+鱼类
+correct: 1
+score: 10|0|0|0
+
+# ================================================================
+# 第八部分：文字+图片题干 + 文字+图片+文字混排选项
+# ================================================================
+
+[Q15]
+type: multi
+mode: all_in_one
+durationMs: 30000
+stem: 选出所有三角形（多选）：
+options: img:shape_triangle1.png+等边三角形|img:shape_circle.png+圆形|img:shape_triangle2.png+直角三角形|img:shape_square.png+正方形
+correct: 1,3
+score: 1|0|1|0
+
+[Q16]
+type: multi
+mode: all_in_one
+durationMs: 25000
+stem: 请选出所有红色物体（多选）
+options: img:red_apple.png+红苹果|img:blue_sky.png+蓝天|img:red_car.png+红车|img:green_tree.png+绿树
+correct: 1,3
+score: 1|0|1|0
+
+# ================================================================
+# 第九部分：记忆闪烁题
+# ================================================================
+
+[Q17]
+type: memory
+mode: all_in_one
+optionsDurationMs: 60000
+dotsPositions: 3,7,12,19,22,30,37,44,51,58
+
+[Q18]
+type: memory
+mode: all_in_one
+optionsDurationMs: 45000
+dotsPositions: 0,9,18,27,36,45,54,63,14,49
+flashDurationMs: 800
+flashIntervalMs: 400
