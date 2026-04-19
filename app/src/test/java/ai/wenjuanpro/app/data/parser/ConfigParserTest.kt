@@ -894,4 +894,62 @@ class ConfigParserTest {
         assertNotNull(err.message)
         assertFalse(err.message.isEmpty())
     }
+
+    // ---------- Mixed Option Content (text + image within single option) ----------
+
+    @Test
+    fun `mixed option with text and image via plus delimiter`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: 请选择正确答案
+            options: A. +img:opt_a.png|B. +img:opt_b.png|C. 纯文字|img:opt_d.png
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue("expected valid, errors=${result.errors}", result.errors.isEmpty())
+        val q = result.config!!.questions[0] as Question.SingleChoice
+        // Option 1: Mixed(Text("A. "), Image("opt_a.png"))
+        val opt1 = q.options[0]
+        assertTrue("expected Mixed, got $opt1", opt1 is OptionContent.Mixed)
+        val parts1 = (opt1 as OptionContent.Mixed).parts
+        assertEquals(2, parts1.size)
+        assertTrue(parts1[0] is OptionContent.Text)
+        assertEquals("A.", (parts1[0] as OptionContent.Text).text.trim())
+        assertTrue(parts1[1] is OptionContent.Image)
+        assertEquals("opt_a.png", (parts1[1] as OptionContent.Image).fileName)
+        // Option 3: pure text (no + delimiter)
+        assertTrue(q.options[2] is OptionContent.Text)
+        // Option 4: pure image (no + delimiter)
+        assertTrue(q.options[3] is OptionContent.Image)
+    }
+
+    @Test
+    fun `mixed option with text then image then text`() {
+        val txt = """
+            # configId: test
+            # title: Test
+            [Q1]
+            type: single
+            mode: all_in_one
+            durationMs: 30000
+            stem: 题干
+            options: 选项A +img:icon_a.png+ 描述A|选项B +img:icon_b.png+ 描述B|C|D
+            correct: 1
+            score: 10|0|0|0
+        """.trimIndent()
+        val result = parser.parse("test.txt", txt.toByteArray())
+        assertTrue(result.errors.isEmpty())
+        val q = result.config!!.questions[0] as Question.SingleChoice
+        val opt1 = q.options[0] as OptionContent.Mixed
+        assertEquals(3, opt1.parts.size)
+        assertTrue(opt1.parts[0] is OptionContent.Text)
+        assertTrue(opt1.parts[1] is OptionContent.Image)
+        assertTrue(opt1.parts[2] is OptionContent.Text)
+    }
 }

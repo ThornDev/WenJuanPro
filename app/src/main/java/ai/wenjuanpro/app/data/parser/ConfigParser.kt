@@ -596,16 +596,7 @@ class ConfigParser
                 parts.map { raw ->
                     if (raw.startsWith(IMAGE_PREFIX)) {
                         val fileName = raw.removePrefix(IMAGE_PREFIX)
-                        if (!fileSystem.exists(ASSET_DIR + fileName)) {
-                            errors.add(
-                                ParseError(
-                                    line = field.line,
-                                    field = "stem",
-                                    code = ParseErrorCode.ASSET_NOT_FOUND,
-                                    message =
-                                        "$sourceName [${section.qid}]: 题干引用的图片 $ASSET_DIR$fileName 不存在",
-                                ),
-                            )
+                        if (!validateAsset(sourceName, section, field.line, "stem", fileName, errors)) {
                             return null
                         }
                         StemContent.Image(fileName)
@@ -638,26 +629,82 @@ class ConfigParser
             }
             val result = mutableListOf<OptionContent>()
             for (part in parts) {
-                if (part.startsWith(IMAGE_PREFIX)) {
-                    val fileName = part.removePrefix(IMAGE_PREFIX)
-                    if (!fileSystem.exists(ASSET_DIR + fileName)) {
-                        errors.add(
-                            ParseError(
-                                line = field.line,
-                                field = "options",
-                                code = ParseErrorCode.ASSET_NOT_FOUND,
-                                message =
-                                    "$sourceName [${section.qid}]: 选项引用的图片 $ASSET_DIR$fileName 不存在",
-                            ),
-                        )
-                        return null
-                    }
-                    result.add(OptionContent.Image(fileName))
-                } else {
-                    result.add(OptionContent.Text(part))
-                }
+                val parsed = parseOptionPart(sourceName, section, field.line, part, errors)
+                    ?: return null
+                result.add(parsed)
             }
             return result
+        }
+
+        /**
+         * Parses a single option part. Supports mixed text+image within one option
+         * using `+` as sub-delimiter: `A. +img:opt_a.png` → Mixed([Text, Image]).
+         */
+        private fun parseOptionPart(
+            sourceName: String,
+            section: Section,
+            line: Int,
+            raw: String,
+            errors: MutableList<ParseError>,
+        ): OptionContent? {
+            if (!raw.contains(OPTION_MIX_DELIMITER)) {
+                // No sub-delimiter → pure text or pure image (original behavior)
+                return if (raw.startsWith(IMAGE_PREFIX)) {
+                    val fileName = raw.removePrefix(IMAGE_PREFIX)
+                    if (!validateAsset(sourceName, section, line, "options", fileName, errors)) {
+                        return null
+                    }
+                    OptionContent.Image(fileName)
+                } else {
+                    OptionContent.Text(raw)
+                }
+            }
+            // Mixed option: split by + and parse each segment
+            val segments = raw.split(OPTION_MIX_DELIMITER).map { it.trim() }
+            if (segments.any { it.isEmpty() }) {
+                errors.add(
+                    invalidField(
+                        sourceName, section.qid, line, "options",
+                        "选项混排段不能为空（检查多余的 + 分隔符）",
+                    ),
+                )
+                return null
+            }
+            val pieces = segments.map { seg ->
+                if (seg.startsWith(IMAGE_PREFIX)) {
+                    val fileName = seg.removePrefix(IMAGE_PREFIX)
+                    if (!validateAsset(sourceName, section, line, "options", fileName, errors)) {
+                        return null
+                    }
+                    OptionContent.Image(fileName)
+                } else {
+                    OptionContent.Text(seg)
+                }
+            }
+            return if (pieces.size == 1) pieces[0] else OptionContent.Mixed(pieces)
+        }
+
+        private fun validateAsset(
+            sourceName: String,
+            section: Section,
+            line: Int,
+            fieldName: String,
+            fileName: String,
+            errors: MutableList<ParseError>,
+        ): Boolean {
+            if (!fileSystem.exists(ASSET_DIR + fileName)) {
+                errors.add(
+                    ParseError(
+                        line = line,
+                        field = fieldName,
+                        code = ParseErrorCode.ASSET_NOT_FOUND,
+                        message =
+                            "$sourceName [${section.qid}]: ${fieldName}引用的图片 $ASSET_DIR$fileName 不存在",
+                    ),
+                )
+                return false
+            }
+            return true
         }
 
         private fun parseScores(
@@ -719,6 +766,7 @@ class ConfigParser
         companion object {
             private const val ASSET_DIR = "/sdcard/WenJuanPro/assets/"
             private const val IMAGE_PREFIX = "img:"
+            private const val OPTION_MIX_DELIMITER = "+"
             private const val DURATION_MIN_MS = 1000L
             private const val DURATION_MAX_MS = 600_000L
             private const val MEMORY_DOTS_COUNT = 10
