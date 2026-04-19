@@ -49,6 +49,7 @@ fun StagedSingleChoiceScaffold(
                 .fillMaxSize()
                 .testTag(StagedSingleChoiceTags.ROOT),
     ) {
+        Spacer(Modifier.height(24.dp))
         CountdownBar(
             progress = state.countdownProgress,
             isWarning = state.isWarning,
@@ -117,17 +118,19 @@ fun StagedSingleChoiceScaffold(
                                 onOptionClick = { onIntent(QuestionIntent.SelectOption(it)) },
                             )
                         }
-                        Button(
-                            onClick = { onIntent(QuestionIntent.Submit) },
-                            enabled = state.submitEnabled,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 56.dp)
-                                    .padding(16.dp)
-                                    .testTag(StagedSingleChoiceTags.SUBMIT_BUTTON),
-                        ) {
-                            Text(stringResource(R.string.question_submit_button))
+                        if (state.showSubmitButton) {
+                            Button(
+                                onClick = { onIntent(QuestionIntent.Submit) },
+                                enabled = state.submitEnabled,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 56.dp)
+                                        .padding(16.dp)
+                                        .testTag(StagedSingleChoiceTags.SUBMIT_BUTTON),
+                            ) {
+                                Text(stringResource(R.string.question_submit_button))
+                            }
                         }
                     }
             }

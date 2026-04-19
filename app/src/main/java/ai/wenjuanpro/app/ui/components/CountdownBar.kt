@@ -89,7 +89,7 @@ fun CountdownBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(10.dp)
+                .height(14.dp)
                 .clip(shape)
                 .background(TrackGray)
                 .testTag(CountdownBarTags.ROOT)

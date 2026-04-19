@@ -41,6 +41,7 @@ fun MemoryQuestionContent(
                 .testTag(MemoryQuestionContentTags.ROOT),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Spacer(modifier = Modifier.height(24.dp))
         CountdownBar(
             progress = state.countdownProgress,
             isWarning = state.isWarning,

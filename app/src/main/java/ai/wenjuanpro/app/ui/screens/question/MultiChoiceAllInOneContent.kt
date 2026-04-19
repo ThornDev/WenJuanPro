@@ -40,6 +40,7 @@ fun MultiChoiceAllInOneContent(
                 .fillMaxSize()
                 .testTag(MultiChoiceAllInOneTags.ROOT),
     ) {
+        Spacer(Modifier.height(24.dp))
         CountdownBar(
             progress = state.countdownProgress,
             isWarning = state.isWarning,
@@ -77,23 +78,25 @@ fun MultiChoiceAllInOneContent(
                 onToggle = { onIntent(QuestionIntent.ToggleOption(it)) },
             )
         }
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Button(
-                onClick = { onIntent(QuestionIntent.Submit) },
-                enabled = state.submitEnabled,
+        if (state.showSubmitButton) {
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                        .testTag(MultiChoiceAllInOneTags.SUBMIT_BUTTON),
+                        .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(stringResource(R.string.question_submit_button))
+                Button(
+                    onClick = { onIntent(QuestionIntent.Submit) },
+                    enabled = state.submitEnabled,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .testTag(MultiChoiceAllInOneTags.SUBMIT_BUTTON),
+                ) {
+                    Text(stringResource(R.string.question_submit_button))
+                }
             }
         }
     }

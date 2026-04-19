@@ -40,6 +40,7 @@ fun SingleChoiceAllInOneContent(
                 .fillMaxSize()
                 .testTag(SingleChoiceAllInOneTags.ROOT),
     ) {
+        Spacer(Modifier.height(24.dp))
         CountdownBar(
             progress = state.countdownProgress,
             isWarning = state.isWarning,
@@ -77,23 +78,25 @@ fun SingleChoiceAllInOneContent(
                 onOptionClick = { onIntent(QuestionIntent.SelectOption(it)) },
             )
         }
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Button(
-                onClick = { onIntent(QuestionIntent.Submit) },
-                enabled = state.submitEnabled,
+        if (state.showSubmitButton) {
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                        .testTag(SingleChoiceAllInOneTags.SUBMIT_BUTTON),
+                        .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(stringResource(R.string.question_submit_button))
+                Button(
+                    onClick = { onIntent(QuestionIntent.Submit) },
+                    enabled = state.submitEnabled,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp)
+                            .testTag(SingleChoiceAllInOneTags.SUBMIT_BUTTON),
+                ) {
+                    Text(stringResource(R.string.question_submit_button))
+                }
             }
         }
     }
