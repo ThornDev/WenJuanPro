@@ -108,16 +108,18 @@ private fun ReadyBody(
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
+                .padding(top = 48.dp)
                 .testTag(WelcomeScreenTags.READY_CONTENT),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.Top,
     ) {
         Text(
             text = stringResource(R.string.welcome_greeting, state.studentId),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.testTag(WelcomeScreenTags.GREETING),
         )
+        Spacer(Modifier.height(32.dp))
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -139,6 +141,7 @@ private fun ReadyBody(
                 modifier = Modifier.testTag(WelcomeScreenTags.ETA),
             )
         }
+        Spacer(Modifier.height(40.dp))
         Button(
             onClick = { onIntent(WelcomeConfirmIntent.OnStartClicked) },
             enabled = !state.starting,
