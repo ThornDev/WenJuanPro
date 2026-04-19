@@ -1,12 +1,12 @@
 package ai.wenjuanpro.app.ui
 
+import ai.wenjuanpro.app.ui.screens.complete.CompleteScreen
 import ai.wenjuanpro.app.ui.screens.configlist.ConfigListScreen
 import ai.wenjuanpro.app.ui.screens.permission.PermissionScreen
 import ai.wenjuanpro.app.ui.screens.question.QuestionScreen
 import ai.wenjuanpro.app.ui.screens.resume.ResumeScreen
 import ai.wenjuanpro.app.ui.screens.scan.ScanScreen
 import ai.wenjuanpro.app.ui.screens.welcome.WelcomeConfirmScreen
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -140,7 +140,14 @@ fun WenJuanProNavHost(navController: NavHostController = rememberNavController()
             )
         }
         composable(NavRoutes.COMPLETE) {
-            Text("Story 2.6 will implement this")
+            CompleteScreen(
+                onReturn = {
+                    navController.navigate(NavRoutes.CONFIG_LIST) {
+                        popUpTo(NavRoutes.PERMISSION) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
         composable(
             "resume?studentId={studentId}&configId={configId}",

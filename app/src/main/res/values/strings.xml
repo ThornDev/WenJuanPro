@@ -36,6 +36,11 @@
     <string name="config_list_error_row_format">第 %1$d 行 · %2$s · %3$s</string>
     <string name="config_list_error_field_placeholder">—</string>
 
+    <string name="complete_title">答题完成</string>
+    <string name="complete_thanks">感谢您的参与</string>
+    <string name="complete_countdown">%1$d 秒后自动返回</string>
+    <string name="complete_return_now">立即返回</string>
+
     <string name="scan_title">扫一扫登录</string>
     <string name="scan_subtitle">扫描答题二维码开始测评</string>
     <string name="scan_top_hint">请将二维码对准取景框</string>
