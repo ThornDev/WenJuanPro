@@ -10,6 +10,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -149,7 +151,7 @@ fun ScanContent(
         modifier = modifier.testTag(ScanScreenTags.ROOT),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.scan_top_hint)) },
+                title = { Text(stringResource(R.string.scan_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = { onIntent(ScanIntent.OnNavigateBack) },
@@ -215,24 +217,53 @@ private fun PreviewBody(onIntent: (ScanIntent) -> Unit) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 64.dp),
+                    .padding(horizontal = 24.dp, vertical = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = stringResource(R.string.scan_top_hint),
-                color = androidx.compose.ui.graphics.Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.testTag(ScanScreenTags.TOP_HINT),
-            )
-            Text(
-                text = stringResource(R.string.scan_bottom_hint),
-                color = androidx.compose.ui.graphics.Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag(ScanScreenTags.BOTTOM_HINT),
-            )
+            ) {
+                Text(
+                    text = stringResource(R.string.scan_title),
+                    color = androidx.compose.ui.graphics.Color.White,
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.scan_subtitle),
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.82f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                        .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f))
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .testTag(ScanScreenTags.BOTTOM_HINT),
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.scan_top_hint),
+                        color = androidx.compose.ui.graphics.Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.scan_bottom_hint),
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.78f),
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
     }
 }

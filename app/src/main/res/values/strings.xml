@@ -33,6 +33,8 @@
     <string name="config_list_error_row_format">第 %1$d 行 · %2$s · %3$s</string>
     <string name="config_list_error_field_placeholder">—</string>
 
+    <string name="scan_title">扫一扫登录</string>
+    <string name="scan_subtitle">扫描答题二维码开始测评</string>
     <string name="scan_top_hint">请将二维码对准取景框</string>
     <string name="scan_bottom_hint">识别后将自动跳转</string>
     <string name="scan_invalid_id_format">学号格式非法：%1$s</string>
