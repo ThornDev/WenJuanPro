@@ -72,6 +72,8 @@ class StartSessionUseCaseTest {
             studentId: String,
             configId: String,
         ): ResumeCandidate? = null
+
+        override fun closeSession() { /* no-op */ }
     }
 
     @Test

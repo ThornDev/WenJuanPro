@@ -132,6 +132,8 @@ class QuestionViewModelTest {
             studentId: String,
             configId: String,
         ): ResumeCandidate? = null
+
+        override fun closeSession() { /* no-op in tests */ }
     }
 
     private fun TestScope.buildVm(
@@ -157,6 +159,8 @@ class QuestionViewModelTest {
         return QuestionViewModel(
             sessionStateHolder = SessionStateHolder(),
             configRepository = configRepo,
+            resultRepository = repo,
+            deviceIdProvider = deviceIdProvider,
             startSessionUseCase = startSession,
             appendResultUseCase = append,
             flashSequenceGenerator = FlashSequenceGenerator(),

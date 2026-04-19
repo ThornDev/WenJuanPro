@@ -1,15 +1,18 @@
 package ai.wenjuanpro.app.feature.question
 
 import ai.wenjuanpro.app.core.concurrency.IoDispatcher
+import ai.wenjuanpro.app.core.device.DeviceIdProvider
 import ai.wenjuanpro.app.core.time.Clock
 import ai.wenjuanpro.app.data.config.ConfigLoadResult
 import ai.wenjuanpro.app.data.config.ConfigRepository
+import ai.wenjuanpro.app.data.result.ResultRepository
 import ai.wenjuanpro.app.domain.fsm.QuestionEvent
 import ai.wenjuanpro.app.domain.fsm.QuestionFsm
 import ai.wenjuanpro.app.domain.fsm.QuestionFsmState
 import ai.wenjuanpro.app.domain.model.AppFailure
 import ai.wenjuanpro.app.domain.model.Config
 import ai.wenjuanpro.app.domain.model.Question
+import ai.wenjuanpro.app.domain.model.Session
 import ai.wenjuanpro.app.domain.model.SsaidUnavailableException
 import ai.wenjuanpro.app.ui.components.DotState
 import ai.wenjuanpro.app.domain.session.SessionStateHolder
@@ -45,6 +48,8 @@ class QuestionViewModel
     constructor(
         private val sessionStateHolder: SessionStateHolder,
         private val configRepository: ConfigRepository,
+        private val resultRepository: ResultRepository,
+        private val deviceIdProvider: DeviceIdProvider,
         private val startSessionUseCase: StartSessionUseCase,
         private val appendResultUseCase: AppendResultUseCase,
         private val flashSequenceGenerator: FlashSequenceGenerator,
@@ -108,28 +113,64 @@ class QuestionViewModel
                 config = loaded
                 sessionStateHolder.setSelectedConfig(loaded)
 
-                val sessionResult =
-                    startSessionUseCase(
-                        studentId = studentId,
-                        config = loaded,
-                        startAt = nowLocalDateTime(),
-                    )
-                val session = sessionResult.getOrElse { failure ->
-                    val message =
-                        if (failure is SsaidUnavailableException) {
-                            CODE_SSAID_UNAVAILABLE
-                        } else {
-                            (failure as? AppFailure)?.code ?: CODE_SESSION_OPEN_FAILED
+                val resumed = tryResume(loaded)
+                val session =
+                    if (resumed != null) {
+                        Timber.d(
+                            "question resumed cursor=${resumed.cursor} completed=${resumed.completedQids.size}",
+                        )
+                        resumed
+                    } else {
+                        val sessionResult =
+                            startSessionUseCase(
+                                studentId = studentId,
+                                config = loaded,
+                                startAt = nowLocalDateTime(),
+                            )
+                        sessionResult.getOrElse { failure ->
+                            val message =
+                                if (failure is SsaidUnavailableException) {
+                                    CODE_SSAID_UNAVAILABLE
+                                } else {
+                                    (failure as? AppFailure)?.code ?: CODE_SESSION_OPEN_FAILED
+                                }
+                            Timber.w("question startSession failed; code=$message")
+                            _uiState.value = QuestionUiState.Error(message)
+                            return@launch
                         }
-                    Timber.w("question startSession failed; code=$message")
-                    _uiState.value = QuestionUiState.Error(message)
-                    return@launch
-                }
+                    }
                 sessionStateHolder.openSession(session)
                 cursor = session.cursor
 
                 enterCurrentQuestion()
             }
+        }
+
+        private suspend fun tryResume(loaded: Config): Session? {
+            val candidate = runCatching {
+                resultRepository.findResumable(studentId, loaded.configId)
+            }.getOrNull() ?: return null
+            if (candidate.completedQids.isEmpty()) return null
+            if (candidate.completedQids.size >= loaded.questions.size) return null
+            val deviceId =
+                withContext(ioDispatcher) { deviceIdProvider.ssaid() }
+                    ?.takeIf { it.isNotBlank() }
+                    ?: return null
+            val session = Session(
+                studentId = studentId,
+                deviceId = deviceId,
+                config = loaded,
+                sessionStart = nowLocalDateTime(),
+                resultFileName = candidate.resultFileName,
+                cursor = candidate.completedQids.size,
+                completedQids = candidate.completedQids,
+            )
+            return runCatching {
+                resultRepository.openSession(session)
+                session
+            }.onFailure {
+                Timber.w(it, "resume openSession failed; falling back to fresh start")
+            }.getOrNull()
         }
 
         private suspend fun loadConfig(): Config? {

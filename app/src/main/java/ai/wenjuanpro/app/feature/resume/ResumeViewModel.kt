@@ -141,14 +141,19 @@ class ResumeViewModel
             viewModelScope.launch {
                 val success = withContext(ioDispatcher) {
                     try {
+                        resultRepository.closeSession()
                         val oldPath = ResultRepositoryImpl.RESULTS_DIR + oldCandidate.resultFileName
                         val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US)
                             .format(java.util.Date())
                         val newPath = "$oldPath.abandoned.$timestamp"
-                        fileSystem.rename(oldPath, newPath)
+                        val renamed = fileSystem.rename(oldPath, newPath)
+                        if (!renamed) {
+                            Timber.w("Rename returned false; deleting abandoned result file instead")
+                            fileSystem.deleteIfExists(oldPath)
+                        }
                         true
                     } catch (e: Exception) {
-                        Timber.w(e, "Failed to rename abandoned file")
+                        Timber.w(e, "Failed to abandon result file")
                         false
                     }
                 }

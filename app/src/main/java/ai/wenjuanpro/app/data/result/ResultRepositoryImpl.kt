@@ -77,6 +77,10 @@ class ResultRepositoryImpl
 
     override suspend fun openSession(session: Session) {
         withContext(ioDispatcher) {
+            resultFileWriter?.close()
+            resultFileWriter = null
+            currentSession = null
+
             fileSystem.mkdirs(resultsDir)
             val filePath = resultsDir + session.resultFileName
             val fileExists = fileSystem.exists(filePath)
@@ -122,7 +126,7 @@ class ResultRepositoryImpl
             }
         }
 
-    fun closeSession() {
+    override fun closeSession() {
         resultFileWriter?.close()
         resultFileWriter = null
         currentSession = null

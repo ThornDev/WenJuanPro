@@ -26,6 +26,9 @@ interface ResultRepository {
         studentId: String,
         configId: String,
     ): ResumeCandidate?
+
+    /** Closes any open session writer. Safe to call when no session is open. */
+    fun closeSession()
 }
 
 sealed interface StartSessionResult {

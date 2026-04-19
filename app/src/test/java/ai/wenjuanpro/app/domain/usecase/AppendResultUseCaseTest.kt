@@ -58,6 +58,8 @@ class AppendResultUseCaseTest {
             studentId: String,
             configId: String,
         ): ResumeCandidate? = null
+
+        override fun closeSession() { /* no-op */ }
     }
 
     @Test
