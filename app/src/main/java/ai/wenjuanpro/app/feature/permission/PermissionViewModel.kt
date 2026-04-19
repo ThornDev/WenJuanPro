@@ -1,5 +1,6 @@
 package ai.wenjuanpro.app.feature.permission
 
+import ai.wenjuanpro.app.core.io.AssetSeeder
 import ai.wenjuanpro.app.data.permission.PermissionRepository
 import ai.wenjuanpro.app.domain.usecase.CheckPermissionUseCase
 import androidx.lifecycle.ViewModel
@@ -20,6 +21,7 @@ class PermissionViewModel
     constructor(
         private val checkPermission: CheckPermissionUseCase,
         private val repository: PermissionRepository,
+        private val assetSeeder: AssetSeeder,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<PermissionUiState>(PermissionUiState.Checking)
         val uiState: StateFlow<PermissionUiState> = _uiState.asStateFlow()
@@ -37,6 +39,7 @@ class PermissionViewModel
         private fun refresh() {
             val granted = checkPermission()
             if (granted) {
+                assetSeeder.seedIfNeeded()
                 _uiState.value = PermissionUiState.Granted
                 Timber.d("permission state changed granted=true")
                 _effect.trySend(PermissionEffect.NavigateToConfigList)

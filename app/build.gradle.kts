@@ -70,7 +70,26 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    sourceSets.getByName("main") {
+        assets.srcDir(layout.buildDirectory.dir("generated/seed"))
+    }
 }
+
+val seedBundle by tasks.registering(Sync::class) {
+    from(rootProject.file("samples/assets")) { into("assets") }
+    from(rootProject.file("samples")) {
+        include("basic-quiz-demo.txt", "cog-mem-2026q3.txt", "full-demo-with-images.txt")
+        into("config")
+    }
+    val extraConfigDir = rootProject.file("samples/config")
+    if (extraConfigDir.isDirectory) {
+        from(extraConfigDir) { into("config") }
+    }
+    into(layout.buildDirectory.dir("generated/seed"))
+}
+
+tasks.named("preBuild") { dependsOn(seedBundle) }
 
 ktlint {
     version.set("1.3.1")

@@ -1,5 +1,6 @@
 package ai.wenjuanpro.app.feature.permission
 
+import ai.wenjuanpro.app.core.io.AssetSeeder
 import ai.wenjuanpro.app.data.permission.PermissionRepository
 import ai.wenjuanpro.app.domain.usecase.CheckPermissionUseCase
 import android.content.Intent
@@ -21,10 +22,11 @@ import org.junit.Test
 class PermissionViewModelTest {
     private val repo: PermissionRepository = mockk(relaxed = true)
     private val intent: Intent = mockk(relaxed = true)
+    private val assetSeeder: AssetSeeder = mockk(relaxed = true)
 
     private fun viewModel(): PermissionViewModel {
         val useCase = CheckPermissionUseCase(repo)
-        return PermissionViewModel(useCase, repo)
+        return PermissionViewModel(useCase, repo, assetSeeder)
     }
 
     // ============================================================
