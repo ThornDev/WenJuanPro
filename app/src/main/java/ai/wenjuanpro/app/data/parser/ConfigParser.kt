@@ -454,6 +454,7 @@ class ConfigParser
             }
             val scores = parseScores(sourceName, section, options.size, errors) ?: return null
             val showSubmit = parseShowSubmit(section)
+            val autoAdvance = parseAutoAdvance(section)
             return Question.SingleChoice(
                 qid = section.qid,
                 mode = mode,
@@ -464,6 +465,7 @@ class ConfigParser
                 correctIndex = correctIndex,
                 scores = scores,
                 showSubmitButton = showSubmit,
+                autoAdvance = autoAdvance,
             )
         }
 
@@ -764,6 +766,14 @@ class ConfigParser
             return when (raw) {
                 "false", "0", "no", "hide", "off" -> false
                 else -> true
+            }
+        }
+
+        private fun parseAutoAdvance(section: Section): Boolean {
+            val raw = section.fields["autoAdvance"]?.value?.trim()?.lowercase() ?: return false
+            return when (raw) {
+                "true", "1", "yes", "on" -> true
+                else -> false
             }
         }
 

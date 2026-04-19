@@ -181,6 +181,13 @@ class QuestionViewModel
             fsmState =
                 questionFsm.reduce(current, QuestionEvent.SelectOption(index), clock.nowMs())
             renderUiFromFsm(clock.nowMs())
+            val autoAdvance =
+                when (val updated = fsmState) {
+                    is QuestionFsmState.QuestionAllInOne -> updated.question.autoAdvance
+                    is QuestionFsmState.QuestionStagedOptions -> updated.question.autoAdvance
+                    else -> false
+                }
+            if (autoAdvance) handleSubmit()
         }
 
         private fun handleToggle(index: Int) {

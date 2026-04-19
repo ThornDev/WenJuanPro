@@ -40,6 +40,7 @@ sealed interface Question {
         val correctIndex: Int,
         val scores: List<Int>,
         val showSubmitButton: Boolean = true,
+        val autoAdvance: Boolean = false,
     ) : Question
 
     data class MultiChoice(
