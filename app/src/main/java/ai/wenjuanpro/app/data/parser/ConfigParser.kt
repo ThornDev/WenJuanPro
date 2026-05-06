@@ -623,7 +623,7 @@ class ConfigParser
                                 )
                                 return null
                             }
-                            if (!validateAsset(sourceName, section, field.line, "stem", audioRef.fileName, errors)) {
+                            if (!validateAsset(sourceName, section, field.line, "stem", AUDIO_SUBDIR + audioRef.fileName, errors)) {
                                 return null
                             }
                             StemContent.Audio(fileName = audioRef.fileName, autoPlay = audioRef.autoPlay)
@@ -880,6 +880,7 @@ class ConfigParser
 
         companion object {
             private const val ASSET_DIR = "/sdcard/WenJuanPro/assets/"
+            private const val AUDIO_SUBDIR = "audios/"
             private const val IMAGE_PREFIX = "img:"
             private const val AUDIO_PREFIX = "audio:"
             private val AUDIO_EXT = setOf("mp3", "wav", "m4a", "ogg", "aac")

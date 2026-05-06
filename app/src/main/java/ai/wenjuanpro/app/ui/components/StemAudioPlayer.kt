@@ -47,7 +47,7 @@ object StemAudioPlayerTags {
     const val ERROR_TEXT = "stem_audio_player_error"
 }
 
-private const val ASSET_DIR = "/sdcard/WenJuanPro/assets/"
+private const val AUDIO_DIR = "/sdcard/WenJuanPro/assets/audios/"
 
 @Composable
 fun StemAudioPlayer(
@@ -55,7 +55,7 @@ fun StemAudioPlayer(
     autoPlay: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val file = File(ASSET_DIR + fileName)
+    val file = File(AUDIO_DIR + fileName)
     var error by remember(fileName) { mutableStateOf<String?>(null) }
     var prepared by remember(fileName) { mutableStateOf(false) }
     var isPlaying by remember(fileName) { mutableStateOf(false) }
