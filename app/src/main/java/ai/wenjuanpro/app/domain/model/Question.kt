@@ -9,6 +9,10 @@ sealed interface StemContent {
         val widthDp: Int? = null,
         val heightDp: Int? = null,
     ) : StemContent
+    data class Audio(
+        val fileName: String,
+        val autoPlay: Boolean = true,
+    ) : StemContent
     data class Mixed(val parts: List<StemContent>) : StemContent
 }
 

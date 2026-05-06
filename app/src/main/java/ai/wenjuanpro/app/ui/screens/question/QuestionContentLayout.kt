@@ -4,6 +4,7 @@ import ai.wenjuanpro.app.domain.model.OptionContent
 import ai.wenjuanpro.app.domain.model.StemContent
 import ai.wenjuanpro.app.ui.components.AssetImage
 import ai.wenjuanpro.app.ui.components.OptionCard
+import ai.wenjuanpro.app.ui.components.StemAudioPlayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -65,6 +66,11 @@ private fun renderStem(stem: StemContent) {
                 fileName = stem.fileName,
                 widthDp = stem.widthDp,
                 heightDp = stem.heightDp,
+            )
+        is StemContent.Audio ->
+            StemAudioPlayer(
+                fileName = stem.fileName,
+                autoPlay = stem.autoPlay,
             )
         is StemContent.Mixed -> {
             stem.parts.forEachIndexed { idx, part ->

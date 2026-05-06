@@ -604,14 +604,31 @@ class ConfigParser
             }
             val pieces =
                 parts.map { raw ->
-                    if (raw.startsWith(IMAGE_PREFIX)) {
-                        val ref = parseImageRef(raw)
-                        if (!validateAsset(sourceName, section, field.line, "stem", ref.fileName, errors)) {
-                            return null
+                    when {
+                        raw.startsWith(IMAGE_PREFIX) -> {
+                            val ref = parseImageRef(raw)
+                            if (!validateAsset(sourceName, section, field.line, "stem", ref.fileName, errors)) {
+                                return null
+                            }
+                            StemContent.Image(ref.fileName, ref.widthDp, ref.heightDp)
                         }
-                        StemContent.Image(ref.fileName, ref.widthDp, ref.heightDp)
-                    } else {
-                        StemContent.Text(raw)
+                        raw.startsWith(AUDIO_PREFIX) -> {
+                            val audioRef = parseAudioRef(raw)
+                            if (audioRef == null) {
+                                errors.add(
+                                    invalidField(
+                                        sourceName, section.qid, field.line, "stem",
+                                        "音频引用非法：扩展名必须为 ${AUDIO_EXT.joinToString("/")}",
+                                    ),
+                                )
+                                return null
+                            }
+                            if (!validateAsset(sourceName, section, field.line, "stem", audioRef.fileName, errors)) {
+                                return null
+                            }
+                            StemContent.Audio(fileName = audioRef.fileName, autoPlay = audioRef.autoPlay)
+                        }
+                        else -> StemContent.Text(raw)
                     }
                 }
             return if (pieces.size == 1) pieces[0] else StemContent.Mixed(pieces)
@@ -717,6 +734,36 @@ class ConfigParser
             }
         }
 
+        /**
+         * Parses an audio reference like `audio:clip.mp3` or
+         * `audio:clip.mp3:autoplay=false`. The extension must be one of
+         * AUDIO_EXT; autoplay defaults to true.
+         */
+        private data class AudioRef(
+            val fileName: String,
+            val autoPlay: Boolean = true,
+        )
+
+        private fun parseAudioRef(raw: String): AudioRef? {
+            val body = raw.removePrefix(AUDIO_PREFIX).trim()
+            if (body.isEmpty()) return null
+            val segments = body.split(":").map { it.trim() }
+            val fileName = segments.first()
+            val ext = fileName.substringAfterLast('.', missingDelimiterValue = "").lowercase()
+            if (ext.isEmpty() || ext !in AUDIO_EXT) return null
+            var autoPlay = true
+            for (seg in segments.drop(1)) {
+                val eq = seg.indexOf('=')
+                if (eq <= 0) continue
+                val key = seg.substring(0, eq).trim().lowercase()
+                val value = seg.substring(eq + 1).trim().lowercase()
+                if (key == "autoplay") {
+                    autoPlay = value !in setOf("false", "0", "no", "off")
+                }
+            }
+            return AudioRef(fileName = fileName, autoPlay = autoPlay)
+        }
+
         private fun validateAsset(
             sourceName: String,
             section: Section,
@@ -732,7 +779,7 @@ class ConfigParser
                         field = fieldName,
                         code = ParseErrorCode.ASSET_NOT_FOUND,
                         message =
-                            "$sourceName [${section.qid}]: ${fieldName}引用的图片 $ASSET_DIR$fileName 不存在",
+                            "$sourceName [${section.qid}]: ${fieldName}引用的资源 $ASSET_DIR$fileName 不存在",
                     ),
                 )
                 return false
@@ -834,6 +881,8 @@ class ConfigParser
         companion object {
             private const val ASSET_DIR = "/sdcard/WenJuanPro/assets/"
             private const val IMAGE_PREFIX = "img:"
+            private const val AUDIO_PREFIX = "audio:"
+            private val AUDIO_EXT = setOf("mp3", "wav", "m4a", "ogg", "aac")
             private const val OPTION_MIX_DELIMITER = "+"
             private const val DURATION_MIN_MS = 1000L
             private const val DURATION_MAX_MS = 600_000L
