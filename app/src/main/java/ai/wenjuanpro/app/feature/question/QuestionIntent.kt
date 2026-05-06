@@ -20,4 +20,6 @@ sealed interface QuestionIntent {
     data class RecallTap(val gridIndex: Int) : QuestionIntent
 
     data object RecallTimeout : QuestionIntent
+
+    data class UpdateFillBlank(val answer: String) : QuestionIntent
 }

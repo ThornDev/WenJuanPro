@@ -322,7 +322,7 @@ class ConfigParser
                         field = "type",
                         code = ParseErrorCode.CONFIG_FIELD_INVALID,
                         message =
-                            "$sourceName [${section.qid}] 第 ${typeField.line} 行: 未知题型：$type（合法值: single/multi/memory）",
+                            "$sourceName [${section.qid}] 第 ${typeField.line} 行: 未知题型：$type（合法值: single/multi/memory/fill）",
                     ),
                 )
                 return null
@@ -354,6 +354,7 @@ class ConfigParser
                 "single" -> parseSingleChoice(sourceName, section, mode, durations, errors)
                 "multi" -> parseMultiChoice(sourceName, section, mode, durations, errors)
                 "memory" -> parseMemoryQuestion(section, mode, durations, errors, sourceName)
+                "fill" -> parseFillBlank(sourceName, section, mode, durations, errors)
                 else -> null
             }
         }
@@ -575,6 +576,63 @@ class ConfigParser
                 dotsPositions = positions,
                 flashDurationMs = flashDurationMs,
                 flashIntervalMs = flashIntervalMs,
+            )
+        }
+
+        private fun parseFillBlank(
+            sourceName: String,
+            section: Section,
+            mode: PresentMode,
+            durations: Durations,
+            errors: MutableList<ParseError>,
+        ): Question? {
+            val stem = parseStem(sourceName, section, errors) ?: return null
+            val correctField = section.fields["correct"]
+            if (correctField == null) {
+                errors.add(missingField(sourceName, section, "correct"))
+                return null
+            }
+            val acceptable =
+                correctField.value.split("|").map { it.trim() }.filter { it.isNotEmpty() }
+            if (acceptable.isEmpty()) {
+                errors.add(
+                    invalidField(
+                        sourceName, section.qid, correctField.line, "correct",
+                        "填空题正确答案非法：至少给出一个非空答案",
+                    ),
+                )
+                return null
+            }
+            val scoreField = section.fields["score"]
+            if (scoreField == null) {
+                errors.add(missingField(sourceName, section, "score"))
+                return null
+            }
+            val scoreValue = scoreField.value.trim().toIntOrNull()
+            if (scoreValue == null || scoreValue < 0) {
+                errors.add(
+                    invalidField(
+                        sourceName, section.qid, scoreField.line, "score",
+                        "填空题分值非法：必须为非负整数",
+                    ),
+                )
+                return null
+            }
+            val caseSensitive =
+                section.fields["caseSensitive"]?.value?.trim()?.lowercase()?.let { raw ->
+                    raw in setOf("true", "1", "yes", "on")
+                } ?: false
+            val showSubmit = parseShowSubmit(section)
+            return Question.FillBlank(
+                qid = section.qid,
+                mode = mode,
+                stemDurationMs = durations.stemDurationMs,
+                optionsDurationMs = durations.optionsDurationMs,
+                stem = stem,
+                acceptableAnswers = acceptable,
+                score = scoreValue,
+                caseSensitive = caseSensitive,
+                showSubmitButton = showSubmit,
             )
         }
 
@@ -896,7 +954,7 @@ class ConfigParser
             private val HEADER_ENTRY_REGEX = Regex("^#\\s*([^:]+?)\\s*:\\s*(.*)$")
             private val CONFIG_ID_REGEX = Regex("^[A-Za-z0-9_-]{1,64}$")
             private val IMAGE_SIZE_REGEX = Regex("^(.+\\.\\w+):(\\d+)(?:x(\\d+))?$")
-            private val TYPE_VALUES = setOf("single", "multi", "memory")
+            private val TYPE_VALUES = setOf("single", "multi", "memory", "fill")
             private val MODE_VALUES = setOf("all_in_one", "staged")
         }
     }

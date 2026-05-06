@@ -96,7 +96,21 @@ class QuestionViewModel
                 QuestionIntent.FlashComplete -> { /* handled by flash coroutine */ }
                 is QuestionIntent.RecallTap -> handleRecallTap(intent.gridIndex)
                 QuestionIntent.RecallTimeout -> handleRecallTimeout()
+                is QuestionIntent.UpdateFillBlank -> handleFillBlankUpdate(intent.answer)
             }
+        }
+
+        private fun handleFillBlankUpdate(answer: String) {
+            val current = fsmState
+            if (current !is QuestionFsmState.FillBlankAllInOne &&
+                current !is QuestionFsmState.FillBlankStagedOptions
+            ) {
+                return
+            }
+            fsmState = questionFsm.reduce(
+                current, QuestionEvent.UpdateFillBlankAnswer(answer), clock.nowMs(),
+            )
+            renderUiFromFsm(clock.nowMs())
         }
 
         private fun bootstrapIfNeeded() {
@@ -203,6 +217,8 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(question), now)
                     is Question.Memory ->
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(question), now)
+                    is Question.FillBlank ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterFillBlank(question), now)
                 }
             renderUiFromFsm(now)
             if (fsmState is QuestionFsmState.MemoryRendering) {
@@ -278,6 +294,22 @@ class QuestionViewModel
                     renderUiFromFsm(now)
                     persistWriting()
                 }
+                is QuestionFsmState.FillBlankAllInOne -> {
+                    if (current.answer.isBlank()) return
+                    cancelCountdown()
+                    val now = clock.nowMs()
+                    fsmState = questionFsm.reduce(current, QuestionEvent.FillBlankSubmit(current.answer), now)
+                    renderUiFromFsm(now)
+                    persistWriting()
+                }
+                is QuestionFsmState.FillBlankStagedOptions -> {
+                    if (current.answer.isBlank()) return
+                    cancelCountdown()
+                    val now = clock.nowMs()
+                    fsmState = questionFsm.reduce(current, QuestionEvent.FillBlankSubmit(current.answer), now)
+                    renderUiFromFsm(now)
+                    persistWriting()
+                }
                 else -> return
             }
         }
@@ -289,6 +321,8 @@ class QuestionViewModel
                 is QuestionFsmState.QuestionStagedOptions,
                 is QuestionFsmState.MultiAllInOne,
                 is QuestionFsmState.MultiStagedOptions,
+                is QuestionFsmState.FillBlankAllInOne,
+                is QuestionFsmState.FillBlankStagedOptions,
                 -> {
                     cancelCountdown()
                     fsmState =
@@ -297,6 +331,7 @@ class QuestionViewModel
                 }
                 is QuestionFsmState.QuestionStagedStem,
                 is QuestionFsmState.MultiStagedStem,
+                is QuestionFsmState.FillBlankStagedStem,
                 -> {
                     cancelCountdown()
                     fsmState = questionFsm.reduce(current, QuestionEvent.StemTimeout, clock.nowMs())
@@ -313,7 +348,8 @@ class QuestionViewModel
         private fun handleStageTransition() {
             val current = fsmState
             if (current !is QuestionFsmState.QuestionStagedStem &&
-                current !is QuestionFsmState.MultiStagedStem
+                current !is QuestionFsmState.MultiStagedStem &&
+                current !is QuestionFsmState.FillBlankStagedStem
             ) {
                 return
             }
@@ -454,6 +490,8 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(nextQuestion), now)
                     is Question.Memory ->
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(nextQuestion), now)
+                    is Question.FillBlank ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterFillBlank(nextQuestion), now)
                 }
             renderUiFromFsm(now)
             if (fsmState is QuestionFsmState.MemoryRendering) {
@@ -665,6 +703,63 @@ class QuestionViewModel
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
                     }
+                    is QuestionFsmState.FillBlankAllInOne -> {
+                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.FillBlankAllInOne(
+                            qid = state.question.qid,
+                            questionIndex = cursor + 1,
+                            totalQuestions = totalQuestions,
+                            stem = state.question.stem,
+                            answer = state.answer,
+                            submitEnabled = state.answer.isNotBlank(),
+                            showSubmitButton = state.question.showSubmitButton,
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
+                    is QuestionFsmState.FillBlankStagedStem -> {
+                        val durationMs =
+                            (state.question.stemDurationMs ?: 1L).coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.FillBlankStaged(
+                            qid = state.question.qid,
+                            questionIndex = cursor + 1,
+                            totalQuestions = totalQuestions,
+                            stem = state.question.stem,
+                            stage = QuestionUiState.Stage.STEM,
+                            answer = "",
+                            submitEnabled = false,
+                            showSubmitButton = state.question.showSubmitButton,
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
+                    is QuestionFsmState.FillBlankStagedOptions -> {
+                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.FillBlankStaged(
+                            qid = state.question.qid,
+                            questionIndex = cursor + 1,
+                            totalQuestions = totalQuestions,
+                            stem = state.question.stem,
+                            stage = QuestionUiState.Stage.OPTIONS,
+                            answer = state.answer,
+                            submitEnabled = state.answer.isNotBlank(),
+                            showSubmitButton = state.question.showSubmitButton,
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
                     is QuestionFsmState.Writing -> _uiState.value
                     is QuestionFsmState.WriteError -> _uiState.value
                     is QuestionFsmState.NextDecision -> _uiState.value
@@ -690,6 +785,12 @@ class QuestionViewModel
                     is QuestionFsmState.MultiStagedOptions ->
                         s.stageEnteredMs to s.question.optionsDurationMs
                     is QuestionFsmState.MemoryRecalling ->
+                        s.stageEnteredMs to s.question.optionsDurationMs
+                    is QuestionFsmState.FillBlankAllInOne ->
+                        s.stageEnteredMs to s.question.optionsDurationMs
+                    is QuestionFsmState.FillBlankStagedStem ->
+                        s.stageEnteredMs to (s.question.stemDurationMs ?: 0L)
+                    is QuestionFsmState.FillBlankStagedOptions ->
                         s.stageEnteredMs to s.question.optionsDurationMs
                     else -> return
                 }

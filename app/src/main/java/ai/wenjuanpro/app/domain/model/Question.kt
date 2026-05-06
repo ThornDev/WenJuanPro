@@ -70,4 +70,16 @@ sealed interface Question {
         val flashDurationMs: Long = 1000L,
         val flashIntervalMs: Long = 500L,
     ) : Question
+
+    data class FillBlank(
+        override val qid: String,
+        override val mode: PresentMode,
+        override val stemDurationMs: Long?,
+        override val optionsDurationMs: Long,
+        val stem: StemContent,
+        val acceptableAnswers: List<String>,
+        val score: Int,
+        val caseSensitive: Boolean = false,
+        val showSubmitButton: Boolean = true,
+    ) : Question
 }

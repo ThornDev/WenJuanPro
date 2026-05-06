@@ -88,6 +88,10 @@ fun QuestionContent(
                     StagedMultiChoiceScaffold(state = state, onIntent = onIntent)
                 is QuestionUiState.Memory ->
                     MemoryQuestionContent(state = state, onIntent = onIntent)
+                is QuestionUiState.FillBlankAllInOne ->
+                    FillBlankAllInOneContent(state = state, onIntent = onIntent)
+                is QuestionUiState.FillBlankStaged ->
+                    StagedFillBlankScaffold(state = state, onIntent = onIntent)
                 is QuestionUiState.RetryWriteBanner ->
                     RetryBannerBody(state = state, onIntent = onIntent)
                 is QuestionUiState.Error -> ErrorBody(state.message)

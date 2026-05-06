@@ -3,6 +3,7 @@ package ai.wenjuanpro.app.domain.fsm
 import ai.wenjuanpro.app.domain.model.PresentMode
 import ai.wenjuanpro.app.domain.model.Question
 import ai.wenjuanpro.app.domain.model.ResultRecord
+import ai.wenjuanpro.app.domain.usecase.ScoreFillBlankUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreMultiChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreSingleChoiceUseCase
 import javax.inject.Inject
@@ -79,6 +80,24 @@ sealed interface QuestionFsmState {
         val selectedSequence: List<Int> = emptyList(),
         val stageEnteredMs: Long = 0L,
     ) : QuestionFsmState
+
+    data class FillBlankAllInOne(
+        val question: Question.FillBlank,
+        val stageEnteredMs: Long,
+        val answer: String = "",
+    ) : QuestionFsmState
+
+    data class FillBlankStagedStem(
+        val question: Question.FillBlank,
+        val stageEnteredMs: Long,
+    ) : QuestionFsmState
+
+    data class FillBlankStagedOptions(
+        val question: Question.FillBlank,
+        val stemMs: Long,
+        val stageEnteredMs: Long,
+        val answer: String = "",
+    ) : QuestionFsmState
 }
 
 sealed interface QuestionEvent {
@@ -117,6 +136,12 @@ sealed interface QuestionEvent {
     data class RecallTap(val gridIndex: Int) : QuestionEvent
 
     data object RecallTimeout : QuestionEvent
+
+    data class EnterFillBlank(val question: Question.FillBlank) : QuestionEvent
+
+    data class UpdateFillBlankAnswer(val answer: String) : QuestionEvent
+
+    data class FillBlankSubmit(val answer: String) : QuestionEvent
 }
 
 @Singleton
@@ -125,6 +150,7 @@ class QuestionFsm
     constructor(
         private val score: ScoreSingleChoiceUseCase,
         private val scoreMulti: ScoreMultiChoiceUseCase,
+        private val scoreFillBlank: ScoreFillBlankUseCase,
     ) {
         fun reduce(
             state: QuestionFsmState,
@@ -150,6 +176,9 @@ class QuestionFsm
                 QuestionEvent.WriteFailure -> onWriteFailure(state)
                 QuestionEvent.Retry -> onRetry(state)
                 QuestionEvent.RetryExhausted -> onRetryExhausted(state)
+                is QuestionEvent.EnterFillBlank -> onEnterFillBlank(event.question, nowMs)
+                is QuestionEvent.UpdateFillBlankAnswer -> onUpdateFillBlankAnswer(state, event.answer)
+                is QuestionEvent.FillBlankSubmit -> onFillBlankSubmit(state, event.answer, nowMs)
             }
 
         private fun onEnterMemory(
@@ -383,6 +412,20 @@ class QuestionFsm
                         stemMs = state.stemMs,
                         optionsMs = state.question.optionsDurationMs,
                     )
+                is QuestionFsmState.FillBlankAllInOne ->
+                    writingFromFillBlankScore(
+                        question = state.question,
+                        answer = state.answer,
+                        stemMs = null,
+                        optionsMs = state.question.optionsDurationMs,
+                    )
+                is QuestionFsmState.FillBlankStagedOptions ->
+                    writingFromFillBlankScore(
+                        question = state.question,
+                        answer = state.answer,
+                        stemMs = state.stemMs,
+                        optionsMs = state.question.optionsDurationMs,
+                    )
                 else -> state
             }
 
@@ -409,6 +452,18 @@ class QuestionFsm
                         QuestionFsmState.Errored("multi stem timeout but stemDurationMs null")
                     } else {
                         QuestionFsmState.MultiStagedOptions(
+                            question = state.question,
+                            stemMs = stemMs,
+                            stageEnteredMs = nowMs,
+                        )
+                    }
+                }
+                is QuestionFsmState.FillBlankStagedStem -> {
+                    val stemMs = state.question.stemDurationMs
+                    if (stemMs == null) {
+                        QuestionFsmState.Errored("fill stem timeout but stemDurationMs null")
+                    } else {
+                        QuestionFsmState.FillBlankStagedOptions(
                             question = state.question,
                             stemMs = stemMs,
                             stageEnteredMs = nowMs,
@@ -490,5 +545,86 @@ class QuestionFsm
                 QuestionFsmState.Writing(record = record, retriesLeft = 3)
             } catch (e: IllegalStateException) {
                 QuestionFsmState.Errored(message = e.message ?: "multi scoring failure")
+            }
+
+        private fun onEnterFillBlank(
+            question: Question.FillBlank,
+            nowMs: Long,
+        ): QuestionFsmState =
+            when (question.mode) {
+                PresentMode.ALL_IN_ONE ->
+                    QuestionFsmState.FillBlankAllInOne(
+                        question = question,
+                        stageEnteredMs = nowMs,
+                    )
+                PresentMode.STAGED -> {
+                    val stemMs = question.stemDurationMs
+                    if (stemMs == null) {
+                        QuestionFsmState.Errored(
+                            "staged fill question missing stemDurationMs; qid=${question.qid}",
+                        )
+                    } else {
+                        QuestionFsmState.FillBlankStagedStem(
+                            question = question,
+                            stageEnteredMs = nowMs,
+                        )
+                    }
+                }
+            }
+
+        private fun onUpdateFillBlankAnswer(
+            state: QuestionFsmState,
+            answer: String,
+        ): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.FillBlankAllInOne -> state.copy(answer = answer)
+                is QuestionFsmState.FillBlankStagedOptions -> state.copy(answer = answer)
+                else -> state
+            }
+
+        private fun onFillBlankSubmit(
+            state: QuestionFsmState,
+            answer: String,
+            nowMs: Long,
+        ): QuestionFsmState =
+            when (state) {
+                is QuestionFsmState.FillBlankAllInOne -> {
+                    val optionsMs = nowMs - state.stageEnteredMs
+                    writingFromFillBlankScore(
+                        question = state.question,
+                        answer = answer,
+                        stemMs = null,
+                        optionsMs = optionsMs,
+                    )
+                }
+                is QuestionFsmState.FillBlankStagedOptions -> {
+                    val optionsMs = nowMs - state.stageEnteredMs
+                    writingFromFillBlankScore(
+                        question = state.question,
+                        answer = answer,
+                        stemMs = state.stemMs,
+                        optionsMs = optionsMs,
+                    )
+                }
+                else -> state
+            }
+
+        private fun writingFromFillBlankScore(
+            question: Question.FillBlank,
+            answer: String,
+            stemMs: Long?,
+            optionsMs: Long,
+        ): QuestionFsmState =
+            try {
+                val record: ResultRecord =
+                    scoreFillBlank(
+                        question = question,
+                        answer = answer,
+                        stemMs = stemMs,
+                        optionsMs = optionsMs,
+                    )
+                QuestionFsmState.Writing(record = record, retriesLeft = 3)
+            } catch (e: IllegalStateException) {
+                QuestionFsmState.Errored(message = e.message ?: "fill scoring failure")
             }
     }

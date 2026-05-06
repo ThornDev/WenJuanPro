@@ -5,6 +5,7 @@ import ai.wenjuanpro.app.domain.model.PresentMode
 import ai.wenjuanpro.app.domain.model.Question
 import ai.wenjuanpro.app.domain.model.ResultStatus
 import ai.wenjuanpro.app.domain.model.StemContent
+import ai.wenjuanpro.app.domain.usecase.ScoreFillBlankUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreMultiChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreSingleChoiceUseCase
 import org.junit.Assert.assertEquals
@@ -21,6 +22,7 @@ class QuestionFsmTest {
             QuestionFsm(
                 score = ScoreSingleChoiceUseCase(),
                 scoreMulti = ScoreMultiChoiceUseCase(),
+                scoreFillBlank = ScoreFillBlankUseCase(),
             )
     }
 

@@ -1,6 +1,6 @@
 package ai.wenjuanpro.app.domain.model
 
-enum class QuestionType { SINGLE, MULTI, MEMORY }
+enum class QuestionType { SINGLE, MULTI, MEMORY, FILL }
 
 enum class ResultStatus { DONE, NOT_ANSWERED, PARTIAL, ERROR }
 

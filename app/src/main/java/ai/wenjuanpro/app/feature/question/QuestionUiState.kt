@@ -93,6 +93,31 @@ sealed interface QuestionUiState {
         override val isWarning: Boolean = false,
     ) : QuestionUiState
 
+    data class FillBlankAllInOne(
+        val qid: String,
+        val questionIndex: Int,
+        val totalQuestions: Int,
+        val stem: StemContent,
+        val answer: String = "",
+        val submitEnabled: Boolean = false,
+        val showSubmitButton: Boolean = true,
+        override val countdownProgress: Float = 1f,
+        override val isWarning: Boolean = false,
+    ) : QuestionUiState
+
+    data class FillBlankStaged(
+        val qid: String,
+        val questionIndex: Int,
+        val totalQuestions: Int,
+        val stem: StemContent,
+        val stage: Stage,
+        val answer: String = "",
+        val submitEnabled: Boolean = false,
+        val showSubmitButton: Boolean = true,
+        override val countdownProgress: Float = 1f,
+        override val isWarning: Boolean = false,
+    ) : QuestionUiState
+
     data class Error(val message: String) : QuestionUiState {
         override val countdownProgress: Float = 0f
         override val isWarning: Boolean = false

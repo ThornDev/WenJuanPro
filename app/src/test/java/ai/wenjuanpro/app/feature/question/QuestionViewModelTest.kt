@@ -20,6 +20,7 @@ import ai.wenjuanpro.app.domain.session.SessionStateHolder
 import ai.wenjuanpro.app.domain.usecase.AppendResultUseCase
 import ai.wenjuanpro.app.domain.usecase.FlashSequenceGenerator
 import ai.wenjuanpro.app.domain.usecase.ScoreMemoryUseCase
+import ai.wenjuanpro.app.domain.usecase.ScoreFillBlankUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreMultiChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.ScoreSingleChoiceUseCase
 import ai.wenjuanpro.app.domain.usecase.StartSessionUseCase
@@ -143,7 +144,7 @@ class QuestionViewModelTest {
     ): QuestionViewModel {
         coEvery { configRepo.loadAll() } returns listOf(ConfigLoadResult.Valid(cfg))
         val score = ScoreSingleChoiceUseCase()
-        val fsm = QuestionFsm(score, ScoreMultiChoiceUseCase())
+        val fsm = QuestionFsm(score, ScoreMultiChoiceUseCase(), ScoreFillBlankUseCase())
         val startSession = StartSessionUseCase(deviceIdProvider, repo, dispatcher)
         val append = AppendResultUseCase(repo, dispatcher)
         val clock = object : Clock {
