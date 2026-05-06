@@ -14,9 +14,18 @@ object ResultFileParser {
     private const val SEPARATOR = "---"
     private const val EXPECTED_FIELD_COUNT = 9
 
+    /**
+     * A question counts as "completed for the session" once a terminal
+     * result line has been written for it — i.e. the participant either
+     * submitted an answer (`done`), let the timer run out (`not_answered`),
+     * or hit the partial path. `error` and unknown statuses do not count,
+     * so a write retry can still resume the same qid.
+     */
+    private val TERMINAL_STATUSES = setOf("done", "not_answered", "partial")
+
     fun parseCompletedQids(fileContent: String): Set<String>? =
         parseQidsByStatus(fileContent)?.let { statusMap ->
-            statusMap.filter { it.value == "done" }.keys
+            statusMap.filter { it.value in TERMINAL_STATUSES }.keys
         }
 
     /**
