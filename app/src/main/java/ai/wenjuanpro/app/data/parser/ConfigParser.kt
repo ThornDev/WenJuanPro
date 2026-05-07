@@ -967,7 +967,9 @@ class ConfigParser
             private const val DEFAULT_FLASH_DURATION_MS = 1000L
             private const val DEFAULT_FLASH_INTERVAL_MS = 500L
             private val LINE_SPLIT_REGEX = Regex("\r?\n")
-            private val SECTION_REGEX = Regex("^\\[Q[1-9]\\d*\\]$")
+            // [Q1], [Q12], [Q3_INTRO], [Q5_NOTICE] all allowed.
+            // Must start with Q + digits, then optional _-suffix of letters/digits/underscores.
+            private val SECTION_REGEX = Regex("^\\[Q\\d+(?:_[A-Za-z0-9_]+)?\\]$")
             private val SECTION_LIKE_REGEX = Regex("^\\[.*\\]$")
             private val HEADER_ENTRY_REGEX = Regex("^#\\s*([^:]+?)\\s*:\\s*(.*)$")
             private val CONFIG_ID_REGEX = Regex("^[A-Za-z0-9_-]{1,64}$")
