@@ -92,6 +92,8 @@ fun QuestionContent(
                     FillBlankAllInOneContent(state = state, onIntent = onIntent)
                 is QuestionUiState.FillBlankStaged ->
                     StagedFillBlankScaffold(state = state, onIntent = onIntent)
+                is QuestionUiState.IntroDisplay ->
+                    IntroContent(state = state, onIntent = onIntent)
                 is QuestionUiState.RetryWriteBanner ->
                     RetryBannerBody(state = state, onIntent = onIntent)
                 is QuestionUiState.Error -> ErrorBody(state.message)

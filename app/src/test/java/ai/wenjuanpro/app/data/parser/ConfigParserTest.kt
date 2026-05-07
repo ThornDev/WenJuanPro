@@ -315,7 +315,7 @@ class ConfigParserTest {
         assertEquals(ParseErrorCode.CONFIG_FIELD_INVALID, err.code)
         assertTrue(
             "message should contain legal values: ${err.message}",
-            err.message.contains("single/multi/memory/fill"),
+            err.message.contains("single/multi/memory/fill/intro"),
         )
     }
 

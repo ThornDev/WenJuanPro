@@ -22,4 +22,6 @@ sealed interface QuestionIntent {
     data object RecallTimeout : QuestionIntent
 
     data class UpdateFillBlank(val answer: String) : QuestionIntent
+
+    data object SkipIntro : QuestionIntent
 }

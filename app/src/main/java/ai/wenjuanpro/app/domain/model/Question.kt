@@ -82,4 +82,18 @@ sealed interface Question {
         val caseSensitive: Boolean = false,
         val showSubmitButton: Boolean = true,
     ) : Question
+
+    /**
+     * Section divider / instruction screen. Not a real question — it just
+     * displays a stem (text/image/audio/mixed) for [optionsDurationMs] and
+     * then auto-advances. Nothing is written to the result file. Always
+     * uses [PresentMode.ALL_IN_ONE] semantically.
+     */
+    data class Intro(
+        override val qid: String,
+        override val mode: PresentMode,
+        override val stemDurationMs: Long?,
+        override val optionsDurationMs: Long,
+        val stem: StemContent,
+    ) : Question
 }

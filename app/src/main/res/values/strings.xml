@@ -75,6 +75,7 @@
     <string name="question_submit_button">提交</string>
     <string name="question_fill_placeholder">请输入答案</string>
     <string name="question_fill_label">填写答案</string>
+    <string name="question_intro_skip_hint">点击屏幕继续</string>
     <string name="question_error_result_write_failed">数据保存失败，请联系研究员</string>
     <string name="question_retry_button">重试</string>
     <string name="question_stem_phase_hint">仅阅读</string>

@@ -94,12 +94,16 @@ class WelcomeConfirmViewModel
                     return@launch
                 }
 
+                val realQuestionCount =
+                    config.questions.count {
+                        it !is ai.wenjuanpro.app.domain.model.Question.Intro
+                    }
                 val hasResume =
                     resultRepository.hasIncompleteResult(
                         deviceId = ssaid,
                         studentId = studentId,
                         configId = configId,
-                        totalQuestions = config.questions.size,
+                        totalQuestions = realQuestionCount,
                     )
                 if (hasResume) {
                     Timber.d("welcome resume detected; routing to Story 4.1 placeholder")

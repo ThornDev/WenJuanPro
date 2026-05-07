@@ -322,7 +322,7 @@ class ConfigParser
                         field = "type",
                         code = ParseErrorCode.CONFIG_FIELD_INVALID,
                         message =
-                            "$sourceName [${section.qid}] 第 ${typeField.line} 行: 未知题型：$type（合法值: single/multi/memory/fill）",
+                            "$sourceName [${section.qid}] 第 ${typeField.line} 行: 未知题型：$type（合法值: single/multi/memory/fill/intro）",
                     ),
                 )
                 return null
@@ -355,6 +355,7 @@ class ConfigParser
                 "multi" -> parseMultiChoice(sourceName, section, mode, durations, errors)
                 "memory" -> parseMemoryQuestion(section, mode, durations, errors, sourceName)
                 "fill" -> parseFillBlank(sourceName, section, mode, durations, errors)
+                "intro" -> parseIntro(sourceName, section, mode, durations, errors)
                 else -> null
             }
         }
@@ -633,6 +634,23 @@ class ConfigParser
                 score = scoreValue,
                 caseSensitive = caseSensitive,
                 showSubmitButton = showSubmit,
+            )
+        }
+
+        private fun parseIntro(
+            sourceName: String,
+            section: Section,
+            mode: PresentMode,
+            durations: Durations,
+            errors: MutableList<ParseError>,
+        ): Question? {
+            val stem = parseStem(sourceName, section, errors) ?: return null
+            return Question.Intro(
+                qid = section.qid,
+                mode = mode,
+                stemDurationMs = durations.stemDurationMs,
+                optionsDurationMs = durations.optionsDurationMs,
+                stem = stem,
             )
         }
 
@@ -954,7 +972,7 @@ class ConfigParser
             private val HEADER_ENTRY_REGEX = Regex("^#\\s*([^:]+?)\\s*:\\s*(.*)$")
             private val CONFIG_ID_REGEX = Regex("^[A-Za-z0-9_-]{1,64}$")
             private val IMAGE_SIZE_REGEX = Regex("^(.+\\.\\w+):(\\d+)(?:x(\\d+))?$")
-            private val TYPE_VALUES = setOf("single", "multi", "memory", "fill")
+            private val TYPE_VALUES = setOf("single", "multi", "memory", "fill", "intro")
             private val MODE_VALUES = setOf("all_in_one", "staged")
         }
     }

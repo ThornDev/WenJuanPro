@@ -97,6 +97,56 @@ class QuestionViewModel
                 is QuestionIntent.RecallTap -> handleRecallTap(intent.gridIndex)
                 QuestionIntent.RecallTimeout -> handleRecallTimeout()
                 is QuestionIntent.UpdateFillBlank -> handleFillBlankUpdate(intent.answer)
+                QuestionIntent.SkipIntro -> handleSkipIntro()
+            }
+        }
+
+        private fun handleSkipIntro() {
+            val current = fsmState
+            if (current !is QuestionFsmState.IntroDisplaying) return
+            cancelCountdown()
+            viewModelScope.launch { advancePastIntro() }
+        }
+
+        private suspend fun advancePastIntro() {
+            val cfg = config ?: return
+            cursor += 1
+            if (cursor >= cfg.questions.size) {
+                _effects.send(QuestionEffect.NavigateComplete)
+                return
+            }
+            enterQuestionAt(cursor)
+            _effects.send(
+                QuestionEffect.NavigateNext(
+                    nextQid = cfg.questions[cursor].qid,
+                    studentId = studentId,
+                    configId = configId,
+                ),
+            )
+        }
+
+        private fun enterQuestionAt(index: Int) {
+            val cfg = config ?: return
+            val q = cfg.questions[index]
+            val now = clock.nowMs()
+            fsmState =
+                when (q) {
+                    is Question.SingleChoice ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.Enter(q), now)
+                    is Question.MultiChoice ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMulti(q), now)
+                    is Question.Memory ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(q), now)
+                    is Question.FillBlank ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterFillBlank(q), now)
+                    is Question.Intro ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterIntro(q), now)
+                }
+            renderUiFromFsm(now)
+            if (fsmState is QuestionFsmState.MemoryRendering) {
+                startFlashSequenceAfterDelay(q as Question.Memory)
+            } else {
+                startCountdownForCurrentStage()
             }
         }
 
@@ -165,18 +215,20 @@ class QuestionViewModel
                 resultRepository.findResumable(studentId, loaded.configId)
             }.getOrNull() ?: return null
             if (candidate.completedQids.isEmpty()) return null
-            if (candidate.completedQids.size >= loaded.questions.size) return null
+            val realQuestionCount = loaded.questions.count { it !is Question.Intro }
+            if (candidate.completedQids.size >= realQuestionCount) return null
             val deviceId =
                 withContext(ioDispatcher) { deviceIdProvider.ssaid() }
                     ?.takeIf { it.isNotBlank() }
                     ?: return null
+            val resumeCursor = computeResumeCursor(loaded, candidate.completedQids)
             val session = Session(
                 studentId = studentId,
                 deviceId = deviceId,
                 config = loaded,
                 sessionStart = nowLocalDateTime(),
                 resultFileName = candidate.resultFileName,
-                cursor = candidate.completedQids.size,
+                cursor = resumeCursor,
                 completedQids = candidate.completedQids,
             )
             return runCatching {
@@ -185,6 +237,21 @@ class QuestionViewModel
             }.onFailure {
                 Timber.w(it, "resume openSession failed; falling back to fresh start")
             }.getOrNull()
+        }
+
+        private fun computeResumeCursor(loaded: Config, completedQids: Set<String>): Int {
+            // Walk the question list in order; intros are auto-skipped by the
+            // runtime so they "count" toward the cursor without appearing in
+            // completedQids. Stop at the first real, unanswered question.
+            var index = 0
+            for (q in loaded.questions) {
+                if (q is Question.Intro || q.qid in completedQids) {
+                    index += 1
+                } else {
+                    break
+                }
+            }
+            return index
         }
 
         private suspend fun loadConfig(): Config? {
@@ -219,6 +286,8 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(question), now)
                     is Question.FillBlank ->
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterFillBlank(question), now)
+                    is Question.Intro ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterIntro(question), now)
                 }
             renderUiFromFsm(now)
             if (fsmState is QuestionFsmState.MemoryRendering) {
@@ -340,6 +409,10 @@ class QuestionViewModel
                 }
                 is QuestionFsmState.MemoryRecalling -> {
                     handleRecallTimeout()
+                }
+                is QuestionFsmState.IntroDisplaying -> {
+                    cancelCountdown()
+                    viewModelScope.launch { advancePastIntro() }
                 }
                 else -> Unit
             }
@@ -492,6 +565,8 @@ class QuestionViewModel
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterMemory(nextQuestion), now)
                     is Question.FillBlank ->
                         questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterFillBlank(nextQuestion), now)
+                    is Question.Intro ->
+                        questionFsm.reduce(QuestionFsmState.Init, QuestionEvent.EnterIntro(nextQuestion), now)
                 }
             renderUiFromFsm(now)
             if (fsmState is QuestionFsmState.MemoryRendering) {
@@ -760,6 +835,19 @@ class QuestionViewModel
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
                     }
+                    is QuestionFsmState.IntroDisplaying -> {
+                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
+                        val remaining = (durationMs - elapsed).coerceAtLeast(0L)
+                        val progress =
+                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                        QuestionUiState.IntroDisplay(
+                            qid = state.question.qid,
+                            stem = state.question.stem,
+                            countdownProgress = progress,
+                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                        )
+                    }
                     is QuestionFsmState.Writing -> _uiState.value
                     is QuestionFsmState.WriteError -> _uiState.value
                     is QuestionFsmState.NextDecision -> _uiState.value
@@ -791,6 +879,8 @@ class QuestionViewModel
                     is QuestionFsmState.FillBlankStagedStem ->
                         s.stageEnteredMs to (s.question.stemDurationMs ?: 0L)
                     is QuestionFsmState.FillBlankStagedOptions ->
+                        s.stageEnteredMs to s.question.optionsDurationMs
+                    is QuestionFsmState.IntroDisplaying ->
                         s.stageEnteredMs to s.question.optionsDurationMs
                     else -> return
                 }

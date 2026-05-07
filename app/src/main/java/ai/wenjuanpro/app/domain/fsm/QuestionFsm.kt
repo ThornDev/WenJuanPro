@@ -98,6 +98,11 @@ sealed interface QuestionFsmState {
         val stageEnteredMs: Long,
         val answer: String = "",
     ) : QuestionFsmState
+
+    data class IntroDisplaying(
+        val question: Question.Intro,
+        val stageEnteredMs: Long,
+    ) : QuestionFsmState
 }
 
 sealed interface QuestionEvent {
@@ -142,6 +147,8 @@ sealed interface QuestionEvent {
     data class UpdateFillBlankAnswer(val answer: String) : QuestionEvent
 
     data class FillBlankSubmit(val answer: String) : QuestionEvent
+
+    data class EnterIntro(val question: Question.Intro) : QuestionEvent
 }
 
 @Singleton
@@ -179,6 +186,8 @@ class QuestionFsm
                 is QuestionEvent.EnterFillBlank -> onEnterFillBlank(event.question, nowMs)
                 is QuestionEvent.UpdateFillBlankAnswer -> onUpdateFillBlankAnswer(state, event.answer)
                 is QuestionEvent.FillBlankSubmit -> onFillBlankSubmit(state, event.answer, nowMs)
+                is QuestionEvent.EnterIntro ->
+                    QuestionFsmState.IntroDisplaying(question = event.question, stageEnteredMs = nowMs)
             }
 
         private fun onEnterMemory(

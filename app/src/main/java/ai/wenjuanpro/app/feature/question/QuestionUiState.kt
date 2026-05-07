@@ -118,6 +118,13 @@ sealed interface QuestionUiState {
         override val isWarning: Boolean = false,
     ) : QuestionUiState
 
+    data class IntroDisplay(
+        val qid: String,
+        val stem: StemContent,
+        override val countdownProgress: Float = 1f,
+        override val isWarning: Boolean = false,
+    ) : QuestionUiState
+
     data class Error(val message: String) : QuestionUiState {
         override val countdownProgress: Float = 0f
         override val isWarning: Boolean = false

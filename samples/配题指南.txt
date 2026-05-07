@@ -29,7 +29,7 @@
 5. 字段格式: key: value（冒号后的空格可选）
 6. 至少包含 1 道题
 7. 题目按 [Q1] → [Q2] → ... 的顺序呈现给学生
-8. 不同题型（单选/多选/记忆/填空）可以在同一份文件中任意穿插
+8. 不同题型（单选/多选/记忆/填空）+ 段落介绍（intro）可以在同一份文件中任意穿插
 
 
 ==============================
@@ -191,6 +191,44 @@ caseSensitive: false
   - 单行文本输入；按"完成"或"Enter"会触发提交
   - 用户输入若包含 | 会被替换为 / 防止破坏结果文件格式
   - 答案中可以包含中文、英文、数字、空格、标点
+
+==============================
+六-ter、段落介绍 (type: intro)
+==============================
+
+不是真正的题型，仅用作分节说明、注意事项或过渡画面。屏幕只显示
+题干（支持文字 / 图片 / 音频 / 混排），有一个倒计时；时间到自动
+进入下一题，学生也可以点击屏幕任意位置立即跳过。
+
+intro 不会写入 result 文件，也不参与计分；研究员的回收数据里只
+会看到真正的题目。
+
+[Q5_INTRO]
+type: intro
+mode: all_in_one
+durationMs: 15000              倒计时（毫秒）；时间到自动跳过
+stem: 接下来是一组听力题，请戴好耳机后点击屏幕开始
+
+可以用图片：
+[Q6_NOTICE]
+type: intro
+mode: all_in_one
+durationMs: 30000
+stem: img:section_2_cover.png
+
+或者文字 + 音频混排：
+[Q7_GUIDE]
+type: intro
+mode: all_in_one
+durationMs: 20000
+stem: 现在进入记忆部分，请仔细听以下指令|audio:memory_intro.mp3|准备好后点击屏幕
+
+注意:
+  - mode 写 all_in_one 即可（intro 没有"题干阶段 / 选项阶段"区分）
+  - 不能写 correct / score / options / dotsPositions（写了会报错）
+  - 题号 [Qx] 编号自由，只是用作 qid 占位，不会出现在 result 里
+  - 中途断电、扫码续答时，已经过的 intro 会自动跳过（不会重看）
+
 
 ==============================
 七、图片引用规则
@@ -478,6 +516,12 @@ optionsDurationMs: 45000
 dotsPositions: 0,9,18,27,36,45,54,63,14,49
 flashDurationMs: 800
 flashIntervalMs: 400
+
+[Q9_INTRO]
+type: intro
+mode: all_in_one
+durationMs: 12000
+stem: 接下来是 2 道填空题，作答后系统自动进入下一题
 
 [Q9]
 type: fill
