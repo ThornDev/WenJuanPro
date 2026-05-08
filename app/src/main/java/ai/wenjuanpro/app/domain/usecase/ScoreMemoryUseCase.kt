@@ -31,12 +31,13 @@ class ScoreMemoryUseCase
                 )
             }
 
-            var prefixMatch = 0
+            // Per-position scoring: each tap that lands on the correct
+            // dot for that ordinal position contributes 1, regardless of
+            // any earlier misses.
+            var positionMatch = 0
             for (i in answer.indices) {
                 if (i < expected.size && answer[i] == expected[i]) {
-                    prefixMatch++
-                } else {
-                    break
+                    positionMatch++
                 }
             }
 
@@ -48,7 +49,7 @@ class ScoreMemoryUseCase
                 optionsMs = optionsMs,
                 answer = answer.joinToString(","),
                 correct = expected.joinToString(","),
-                score = prefixMatch,
+                score = positionMatch,
                 status = ResultStatus.DONE,
             )
         }

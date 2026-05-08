@@ -27,16 +27,31 @@ class ScoreMemoryUseCaseTest {
     }
 
     @Test
-    fun `3_3-UNIT-002 partial match score equals prefix count`() {
-        val answer = listOf(7, 3, 12) // first 2 match, 3rd doesn't
+    fun `3_3-UNIT-002 partial match score equals per-position match count`() {
+        val answer = listOf(7, 3, 12) // positions 1, 2 match; position 3 does not
         val result = useCase(question, answer = answer, expected = expected, optionsMs = 50_000L)
         assertEquals(2, result.score)
         assertEquals(ResultStatus.DONE, result.status)
     }
 
     @Test
-    fun `3_3-UNIT-003 all wrong score 0 status DONE`() {
-        val answer = listOf(58, 51, 37) // first doesn't match
+    fun `3_3-UNIT-002b position scoring keeps counting after a miss`() {
+        // expected      = [7, 3, 44, 19, 58, ...]
+        // answer        = [7, 3, 99, 19, 58, ...]
+        //                  ^  ^  X   ^   ^
+        // Old prefix logic would have given 2 (stops at the miss).
+        // Per-position logic gives 4 because positions 1,2,4,5 still
+        // line up with the expected sequence.
+        val answer = listOf(7, 3, 99, 19, 58)
+        val result = useCase(question, answer = answer, expected = expected, optionsMs = 50_000L)
+        assertEquals(4, result.score)
+        assertEquals(ResultStatus.DONE, result.status)
+    }
+
+    @Test
+    fun `3_3-UNIT-003 all positions wrong score 0 status DONE`() {
+        // expected = [7, 3, 44, ...]; every position offset by one slot.
+        val answer = listOf(58, 51, 37)
         val result = useCase(question, answer = answer, expected = expected, optionsMs = 60_000L)
         assertEquals(0, result.score)
         assertEquals(ResultStatus.DONE, result.status)
