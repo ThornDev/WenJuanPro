@@ -40,9 +40,6 @@ class ConfigListViewModel
         val effect: Flow<ConfigListEffect> = _effect.receiveAsFlow()
 
         @Volatile
-        private var lastSelectedConfigId: String? = null
-
-        @Volatile
         private var refreshInFlight: Boolean = false
 
         private var currentCards: List<ConfigCardUiModel> = emptyList()
@@ -102,11 +99,9 @@ class ConfigListViewModel
         }
 
         private fun cardClicked(configId: String) {
-            if (lastSelectedConfigId == configId) {
-                Timber.d("cardClicked deduped configId=$configId")
-                return
-            }
-            lastSelectedConfigId = configId
+            // Nav graph uses launchSingleTop, so rapid double-taps coalesce
+            // at the navigation layer; we no longer dedupe here, otherwise a
+            // user who scans then backs out cannot re-enter scan.
             sessionState.selectConfig(configId)
             _effect.trySend(ConfigListEffect.NavigateToScan(configId))
         }
