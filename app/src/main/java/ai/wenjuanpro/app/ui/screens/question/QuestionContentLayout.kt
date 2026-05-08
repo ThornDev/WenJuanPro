@@ -32,10 +32,7 @@ object QuestionContentTags {
     const val OPTIONS_GRID = "question_options_grid"
 }
 
-internal fun optionColumnsFor(
-    count: Int,
-    optionsPerRow: Int? = null,
-): GridCells =
+internal fun optionColumnsFor(optionsPerRow: Int? = null): GridCells =
     if (optionsPerRow != null && optionsPerRow in 1..3) {
         GridCells.Fixed(optionsPerRow)
     } else {
@@ -112,7 +109,7 @@ fun OptionsGrid(
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
-        columns = optionColumnsFor(options.size, optionsPerRow),
+        columns = optionColumnsFor(optionsPerRow),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =
@@ -146,7 +143,7 @@ fun MultiOptionsGrid(
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
-        columns = optionColumnsFor(options.size, optionsPerRow),
+        columns = optionColumnsFor(optionsPerRow),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier =
