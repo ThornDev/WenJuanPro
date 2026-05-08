@@ -9,9 +9,12 @@ import ai.wenjuanpro.app.feature.configlist.ConfigListViewModel
 import ai.wenjuanpro.app.feature.configlist.ErrorSheetState
 import ai.wenjuanpro.app.ui.components.ErrorSheet
 import ai.wenjuanpro.app.ui.components.HiddenLongPressArea
+import ai.wenjuanpro.app.ui.screens.manualupload.ManualUploadDialog
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,12 +45,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -82,6 +88,7 @@ object ConfigListScreenTags {
     const val SCAN_BUTTON = "config_list_scan_button"
     const val CHECK_CONFIG_BUTTON = "config_list_check_config_button"
     const val DIAG_DIALOG = "config_list_diag_dialog"
+    const val ADMIN_TAP_AREA = "config_list_admin_tap_area"
 }
 
 @Composable
@@ -122,6 +129,10 @@ fun ConfigListContent(
     modifier: Modifier = Modifier,
 ) {
     var showDiag by remember { mutableStateOf(false) }
+    var hiddenTapCount by remember { mutableIntStateOf(0) }
+    var hiddenLastTapMs by remember { mutableLongStateOf(0L) }
+    var showPasswordPrompt by remember { mutableStateOf(false) }
+    var showManualUpload by remember { mutableStateOf(false) }
 
     if (sheetState != null) {
         BackHandler(enabled = true) { onIntent(ConfigListIntent.DismissSheet) }
@@ -239,6 +250,32 @@ fun ConfigListContent(
                     .testTag(ConfigListScreenTags.HIDDEN_AREA),
         )
 
+        // Transparent admin tap area in the top-right corner. Five quick taps
+        // (within 2.5s windows between successive taps) opens a password
+        // prompt; the correct passcode shows the manual-upload dialog.
+        val tapInteraction = remember { MutableInteractionSource() }
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .size(56.dp)
+                    .clickable(
+                        interactionSource = tapInteraction,
+                        indication = null,
+                        onClick = {
+                            val now = android.os.SystemClock.elapsedRealtime()
+                            hiddenTapCount =
+                                if (now - hiddenLastTapMs > HIDDEN_TAP_WINDOW_MS) 1 else hiddenTapCount + 1
+                            hiddenLastTapMs = now
+                            if (hiddenTapCount >= HIDDEN_TAP_TRIGGER_COUNT) {
+                                hiddenTapCount = 0
+                                showPasswordPrompt = true
+                            }
+                        },
+                    )
+                    .testTag(ConfigListScreenTags.ADMIN_TAP_AREA),
+        )
+
         if (sheetState != null) {
             ErrorSheet(
                 errors = sheetState.errors,
@@ -253,6 +290,90 @@ fun ConfigListContent(
                 onRefresh = { onIntent(ConfigListIntent.Refresh) },
                 onViewErrors = { onIntent(ConfigListIntent.ViewErrors(it)) },
             )
+        }
+
+        if (showPasswordPrompt) {
+            AdminPasswordDialog(
+                onDismiss = { showPasswordPrompt = false },
+                onAccepted = {
+                    showPasswordPrompt = false
+                    showManualUpload = true
+                },
+            )
+        }
+
+        if (showManualUpload) {
+            ManualUploadDialog(onDismiss = { showManualUpload = false })
+        }
+    }
+}
+
+private const val HIDDEN_TAP_WINDOW_MS: Long = 2_500L
+private const val HIDDEN_TAP_TRIGGER_COUNT: Int = 5
+private const val ADMIN_PASSCODE: String = "888@999"
+
+@Composable
+private fun AdminPasswordDialog(
+    onDismiss: () -> Unit,
+    onAccepted: () -> Unit,
+) {
+    var entry by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.widthIn(max = 420.dp),
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = stringResource(R.string.admin_passcode_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = entry,
+                    onValueChange = {
+                        entry = it
+                        error = false
+                    },
+                    singleLine = true,
+                    isError = error,
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    label = { Text(stringResource(R.string.admin_passcode_label)) },
+                    supportingText = {
+                        if (error) {
+                            Text(
+                                text = stringResource(R.string.admin_passcode_error),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.admin_passcode_cancel))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (entry == ADMIN_PASSCODE) {
+                                onAccepted()
+                            } else {
+                                error = true
+                            }
+                        },
+                        enabled = entry.isNotBlank(),
+                    ) {
+                        Text(stringResource(R.string.admin_passcode_confirm))
+                    }
+                }
+            }
         }
     }
 }
