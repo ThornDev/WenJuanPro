@@ -8,7 +8,7 @@ sealed interface CompleteUploadState {
 
     data object Success : CompleteUploadState
 
-    data class Failed(val attempts: Int) : CompleteUploadState
+    data class Failed(val attempts: Int, val reason: String? = null) : CompleteUploadState
 
     data object NoFile : CompleteUploadState
 }

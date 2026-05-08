@@ -193,7 +193,15 @@ private fun UploadStatusPill(state: CompleteUploadState) {
                 Triple(stringResource(R.string.complete_upload_success), false, false)
             is CompleteUploadState.Failed ->
                 Triple(
-                    stringResource(R.string.complete_upload_failed, state.attempts),
+                    if (state.reason.isNullOrBlank()) {
+                        stringResource(R.string.complete_upload_failed, state.attempts)
+                    } else {
+                        stringResource(
+                            R.string.complete_upload_failed_with_reason,
+                            state.attempts,
+                            state.reason,
+                        )
+                    },
                     true,
                     false,
                 )

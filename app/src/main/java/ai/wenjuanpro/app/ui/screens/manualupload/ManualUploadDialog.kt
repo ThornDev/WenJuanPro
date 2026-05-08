@@ -170,8 +170,15 @@ private fun StatusLine(status: FileStatus) {
                 )
             FileStatus.Success ->
                 Pair(stringResource(R.string.manual_upload_status_success), MaterialTheme.colorScheme.primary)
-            FileStatus.Failed ->
-                Pair(stringResource(R.string.manual_upload_status_failed), MaterialTheme.colorScheme.error)
+            is FileStatus.Failed ->
+                Pair(
+                    if (status.reason.isNullOrBlank()) {
+                        stringResource(R.string.manual_upload_status_failed)
+                    } else {
+                        stringResource(R.string.manual_upload_status_failed_with_reason, status.reason)
+                    },
+                    MaterialTheme.colorScheme.error,
+                )
         }
     if (text != null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -200,7 +207,7 @@ private fun UploadButton(
     val labelRes =
         when (status) {
             FileStatus.Success -> R.string.manual_upload_btn_again
-            FileStatus.Failed -> R.string.manual_upload_btn_retry
+            is FileStatus.Failed -> R.string.manual_upload_btn_retry
             is FileStatus.Uploading -> R.string.manual_upload_btn_uploading
             FileStatus.Idle -> R.string.manual_upload_btn_upload
         }

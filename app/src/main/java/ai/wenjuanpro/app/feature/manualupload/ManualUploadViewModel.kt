@@ -70,7 +70,12 @@ class ManualUploadViewModel
                     }
                 updateRow(fileName) {
                     it.copy(
-                        status = if (outcome.isSuccess) FileStatus.Success else FileStatus.Failed,
+                        status =
+                            if (outcome.isSuccess) {
+                                FileStatus.Success
+                            } else {
+                                FileStatus.Failed(outcome.exceptionOrNull()?.message)
+                            },
                     )
                 }
             }
@@ -118,5 +123,5 @@ sealed interface FileStatus {
 
     data object Success : FileStatus
 
-    data object Failed : FileStatus
+    data class Failed(val reason: String? = null) : FileStatus
 }

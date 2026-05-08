@@ -54,7 +54,10 @@ class CompleteViewModel
                     if (outcome.isSuccess) {
                         CompleteUploadState.Success
                     } else {
-                        CompleteUploadState.Failed(attempts = UploadResultUseCase.MAX_ATTEMPTS)
+                        CompleteUploadState.Failed(
+                            attempts = UploadResultUseCase.MAX_ATTEMPTS,
+                            reason = outcome.exceptionOrNull()?.message,
+                        )
                     }
             }
         }

@@ -43,6 +43,7 @@
     <string name="manual_upload_status_uploading">上传中… %1$d / %2$d</string>
     <string name="manual_upload_status_success">已上传</string>
     <string name="manual_upload_status_failed">上传失败</string>
+    <string name="manual_upload_status_failed_with_reason">上传失败：%1$s</string>
     <string name="config_list_refresh_cd">刷新</string>
     <string name="config_list_status_valid">有效</string>
     <string name="config_list_status_invalid">损坏</string>
@@ -67,6 +68,7 @@
     <string name="complete_uploading">结果上传中… %1$d / %2$d</string>
     <string name="complete_upload_success">结果已上传</string>
     <string name="complete_upload_failed">结果上传失败（已重试 %1$d 次）</string>
+    <string name="complete_upload_failed_with_reason">结果上传失败（已重试 %1$d 次）：%2$s</string>
     <string name="complete_upload_no_file">未找到结果文件</string>
 
     <string name="scan_title">扫一扫登录</string>
