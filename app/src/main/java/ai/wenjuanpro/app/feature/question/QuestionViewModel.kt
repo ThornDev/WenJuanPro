@@ -844,6 +844,7 @@ class QuestionViewModel
                         QuestionUiState.IntroDisplay(
                             qid = state.question.qid,
                             stem = state.question.stem,
+                            showNextButton = state.question.showNextButton,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )

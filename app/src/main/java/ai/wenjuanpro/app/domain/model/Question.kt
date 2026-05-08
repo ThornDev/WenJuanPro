@@ -95,5 +95,6 @@ sealed interface Question {
         override val stemDurationMs: Long?,
         override val optionsDurationMs: Long,
         val stem: StemContent,
+        val showNextButton: Boolean = true,
     ) : Question
 }

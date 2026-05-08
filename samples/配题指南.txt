@@ -198,7 +198,7 @@ caseSensitive: false
 
 不是真正的题型，仅用作分节说明、注意事项或过渡画面。屏幕只显示
 题干（支持文字 / 图片 / 音频 / 混排），有一个倒计时；时间到自动
-进入下一题，学生也可以点击屏幕任意位置立即跳过。
+进入下一题，也可显示「下一页」按钮让学生主动翻页。
 
 intro 不会写入 result 文件，也不参与计分；研究员的回收数据里只
 会看到真正的题目。
@@ -207,21 +207,26 @@ intro 不会写入 result 文件，也不参与计分；研究员的回收数据
 type: intro
 mode: all_in_one
 durationMs: 15000              倒计时（毫秒）；时间到自动跳过
-stem: 接下来是一组听力题，请戴好耳机后点击屏幕开始
+stem: 接下来是一组听力题，请戴好耳机后点击下一页
 
-可以用图片：
+可选参数:
+  showNext: true                是否显示「下一页」按钮（默认 true）
+                                false 表示强制等倒计时结束才能跳过
+
+带图片的过渡页（强制阅读 30 秒）：
 [Q6_NOTICE]
 type: intro
 mode: all_in_one
 durationMs: 30000
 stem: img:section_2_cover.png
+showNext: false                 学生不能提前跳过
 
-或者文字 + 音频混排：
+文字 + 音频混排，加按钮立即翻页：
 [Q7_GUIDE]
 type: intro
 mode: all_in_one
 durationMs: 20000
-stem: 现在进入记忆部分，请仔细听以下指令|audio:memory_intro.mp3|准备好后点击屏幕
+stem: 现在进入记忆部分，请仔细听以下指令|audio:memory_intro.mp3
 
 注意:
   - mode 写 all_in_one 即可（intro 没有"题干阶段 / 选项阶段"区分）

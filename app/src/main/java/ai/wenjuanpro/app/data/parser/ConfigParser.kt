@@ -645,13 +645,23 @@ class ConfigParser
             errors: MutableList<ParseError>,
         ): Question? {
             val stem = parseStem(sourceName, section, errors) ?: return null
+            val showNext = parseShowNext(section)
             return Question.Intro(
                 qid = section.qid,
                 mode = mode,
                 stemDurationMs = durations.stemDurationMs,
                 optionsDurationMs = durations.optionsDurationMs,
                 stem = stem,
+                showNextButton = showNext,
             )
+        }
+
+        private fun parseShowNext(section: Section): Boolean {
+            val raw = section.fields["showNext"]?.value?.trim()?.lowercase() ?: return true
+            return when (raw) {
+                "false", "0", "no", "hide", "off" -> false
+                else -> true
+            }
         }
 
         // ---------------------------------------------------------------------

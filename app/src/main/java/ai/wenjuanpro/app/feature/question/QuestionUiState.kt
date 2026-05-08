@@ -121,6 +121,7 @@ sealed interface QuestionUiState {
     data class IntroDisplay(
         val qid: String,
         val stem: StemContent,
+        val showNextButton: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
