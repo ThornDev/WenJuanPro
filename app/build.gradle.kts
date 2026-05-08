@@ -1,3 +1,13 @@
+import java.util.Properties
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val hasReleaseSigning = keystorePropertiesFile.isFile
+
+if (hasReleaseSigning) {
+    keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,6 +20,19 @@ plugins {
 android {
     namespace = "ai.wenjuanpro.app"
     compileSdk = 34
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "ai.wenjuanpro.app"
@@ -29,6 +52,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -77,6 +103,7 @@ android {
 }
 
 val seedBundle by tasks.registering(Sync::class) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from(rootProject.file("samples/assets")) { into("assets") }
     from(rootProject.file("samples")) {
         include("basic-quiz-demo.txt", "cog-mem-2026q3.txt", "full-demo-with-images.txt")
@@ -114,6 +141,7 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.core)
+    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)
@@ -136,6 +164,8 @@ dependencies {
     implementation(libs.zxing.android.embedded)
 
     implementation(libs.coil.compose)
+
+    implementation(libs.okhttp)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

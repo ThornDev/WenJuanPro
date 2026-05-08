@@ -1,6 +1,8 @@
 package ai.wenjuanpro.app.ui.screens.complete
 
 import ai.wenjuanpro.app.R
+import ai.wenjuanpro.app.feature.complete.CompleteUploadState
+import ai.wenjuanpro.app.feature.complete.CompleteViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -9,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,13 +19,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,12 +47,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 
 object CompleteScreenTags {
     const val ROOT = "complete_screen_root"
     const val RETURN_BUTTON = "complete_return_button"
     const val COUNTDOWN_TEXT = "complete_countdown_text"
+    const val UPLOAD_STATUS = "complete_upload_status"
 }
 
 private const val AUTO_RETURN_SECONDS = 60
@@ -57,7 +66,9 @@ private val HeroEnd = Color(0xFF42A5F5)
 fun CompleteScreen(
     onReturn: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: CompleteViewModel = hiltViewModel(),
 ) {
+    val uploadState by viewModel.uploadState.collectAsStateWithLifecycle()
     var remaining by remember { mutableIntStateOf(AUTO_RETURN_SECONDS) }
 
     BackHandler(enabled = true) { onReturn() }
@@ -156,6 +167,61 @@ fun CompleteScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.testTag(CompleteScreenTags.COUNTDOWN_TEXT),
+            )
+            Spacer(Modifier.height(20.dp))
+            UploadStatusPill(state = uploadState)
+        }
+    }
+}
+
+@Composable
+private fun UploadStatusPill(state: CompleteUploadState) {
+    val (text, dim, showSpinner) =
+        when (state) {
+            CompleteUploadState.Idle -> Triple(null, false, false)
+            is CompleteUploadState.Uploading ->
+                Triple(
+                    stringResource(
+                        R.string.complete_uploading,
+                        state.attempt,
+                        state.maxAttempts,
+                    ),
+                    false,
+                    true,
+                )
+            CompleteUploadState.Success ->
+                Triple(stringResource(R.string.complete_upload_success), false, false)
+            is CompleteUploadState.Failed ->
+                Triple(
+                    stringResource(R.string.complete_upload_failed, state.attempts),
+                    true,
+                    false,
+                )
+            CompleteUploadState.NoFile ->
+                Triple(stringResource(R.string.complete_upload_no_file), true, false)
+        }
+    if (text == null) return
+    Surface(
+        color = Color.White.copy(alpha = if (dim) 0.10f else 0.18f),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.testTag(CompleteScreenTags.UPLOAD_STATUS),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (showSpinner) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(
+                text = text,
+                color = Color.White.copy(alpha = if (dim) 0.7f else 0.95f),
+                style = MaterialTheme.typography.labelLarge,
             )
         }
     }

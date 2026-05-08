@@ -19,7 +19,7 @@
     <string name="config_list_hero_greeting">欢迎使用</string>
     <string name="config_list_hero_brand">趣味大闯关系统</string>
     <string name="config_list_hero_hint">请选择下方测评集开始答题</string>
-    <string name="welcome_tagline">请使用学生二维码扫码登录，开始答题</string>
+    <string name="welcome_tagline">请使用学生二维码扫码登录，开始闯关</string>
     <string name="welcome_scan_button">扫码登录</string>
     <string name="welcome_no_valid_config">暂无可用测评配置，请检查配置文件</string>
     <string name="welcome_check_config">检查配置</string>
@@ -44,13 +44,17 @@
     <string name="config_list_error_row_format">第 %1$d 行 · %2$s · %3$s</string>
     <string name="config_list_error_field_placeholder">—</string>
 
-    <string name="complete_title">答题完成</string>
+    <string name="complete_title">闯关完成</string>
     <string name="complete_thanks">感谢您的参与</string>
     <string name="complete_countdown">%1$d 秒后自动返回</string>
     <string name="complete_return_now">立即返回</string>
+    <string name="complete_uploading">结果上传中… %1$d / %2$d</string>
+    <string name="complete_upload_success">结果已上传</string>
+    <string name="complete_upload_failed">结果上传失败（已重试 %1$d 次）</string>
+    <string name="complete_upload_no_file">未找到结果文件</string>
 
     <string name="scan_title">扫一扫登录</string>
-    <string name="scan_subtitle">扫描答题二维码开始测评</string>
+    <string name="scan_subtitle">扫描答题二维码开始闯关</string>
     <string name="scan_top_hint">请将二维码对准取景框</string>
     <string name="scan_bottom_hint">识别后将自动跳转</string>
     <string name="scan_invalid_id_format">学号格式非法：%1$s</string>
@@ -83,12 +87,12 @@
     <string name="question_progress_counter_format">第 %1$d / %2$d 题</string>
     <string name="question_memory_phase_hint">记忆中…</string>
 
-    <string name="resume_title">检测到未完成的测评</string>
+    <string name="resume_title">检测到未完成的闯关</string>
     <string name="resume_student">学号：%1$s</string>
-    <string name="resume_config">测评名称：%1$s</string>
-    <string name="resume_progress">已完成：%1$d / %2$d 题</string>
+    <string name="resume_config">闯关名称：%1$s</string>
+    <string name="resume_progress">已完成：%1$d / %2$d 关</string>
     <string name="resume_last_time">上次开始时间：%1$s</string>
-    <string name="resume_continue_button">继续上次答题</string>
+    <string name="resume_continue_button">继续上次闯关</string>
     <string name="resume_abandon_button">放弃并重新开始</string>
     <string name="resume_abandon_confirm_title">确认放弃？</string>
     <string name="resume_abandon_confirm_body">将丢失上次记录，确认放弃？</string>
