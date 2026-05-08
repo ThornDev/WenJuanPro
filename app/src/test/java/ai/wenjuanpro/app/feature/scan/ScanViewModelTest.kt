@@ -128,7 +128,7 @@ class ScanViewModelTest {
             val vm = buildVm()
             val effects = mutableListOf<ScanEffect>()
             val job = launch { vm.effects.toList(effects) }
-            vm.onIntent(ScanIntent.OnQrDecoded("S001"))
+            vm.onIntent(ScanIntent.OnQrDecoded("S001@beihai"))
             advanceUntilIdle()
             job.cancel()
 
@@ -163,7 +163,7 @@ class ScanViewModelTest {
                         }
                     }
                 }
-            vm.onIntent(ScanIntent.OnQrDecoded("S001"))
+            vm.onIntent(ScanIntent.OnQrDecoded("S001@beihai"))
             advanceUntilIdle()
             job.cancel()
             assertEquals(listOf("setStudentId", "navigate"), calls)
@@ -192,9 +192,9 @@ class ScanViewModelTest {
             val vm = buildVm()
             val effects = mutableListOf<ScanEffect>()
             val job = launch { vm.effects.toList(effects) }
-            vm.onIntent(ScanIntent.OnQrDecoded("S001"))
-            vm.onIntent(ScanIntent.OnQrDecoded("S001"))
-            vm.onIntent(ScanIntent.OnQrDecoded("S001"))
+            vm.onIntent(ScanIntent.OnQrDecoded("S001@beihai"))
+            vm.onIntent(ScanIntent.OnQrDecoded("S001@beihai"))
+            vm.onIntent(ScanIntent.OnQrDecoded("S001@beihai"))
             advanceUntilIdle()
             job.cancel()
 

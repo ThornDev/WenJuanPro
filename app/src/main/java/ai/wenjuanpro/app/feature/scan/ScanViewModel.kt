@@ -112,15 +112,16 @@ class ScanViewModel
                 Timber.d("scan decode dropped; stateCls=${current::class.simpleName}")
                 return
             }
-            when (StudentIdValidator.validate(content)) {
-                StudentIdValidator.ValidationResult.Valid -> {
-                    Timber.d("scan recognized; len=${content.length} valid")
-                    _uiState.value = ScanUiState.Recognized(studentId = content)
+            when (val result = StudentIdValidator.validate(content)) {
+                is StudentIdValidator.ValidationResult.Valid -> {
+                    val studentId = result.studentId
+                    Timber.d("scan recognized; len=${studentId.length} valid")
+                    _uiState.value = ScanUiState.Recognized(studentId = studentId)
                     viewModelScope.launch {
-                        sessionStateHolder.setStudentId(content)
+                        sessionStateHolder.setStudentId(studentId)
                         _effects.send(
                             ScanEffect.NavigateToWelcome(
-                                studentId = content,
+                                studentId = studentId,
                                 configId = configId,
                             ),
                         )
@@ -132,8 +133,7 @@ class ScanViewModel
                     )
                     _uiState.value =
                         current.copy(
-                            transientSnackbar =
-                                context.getString(R.string.scan_invalid_id_format, content),
+                            transientSnackbar = result.reason,
                         )
                 }
             }
