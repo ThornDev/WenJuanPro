@@ -589,7 +589,15 @@ class QuestionViewModel
 
         private fun renderUiFromFsm(nowMs: Long) {
             val cfg = config
-            val totalQuestions = cfg?.questions?.size ?: 0
+            // Intro pages are not real questions, so they should not be counted
+            // in the "第 X / Y 题" progress label shown to the student.
+            val totalQuestions = cfg?.questions?.count { it !is Question.Intro } ?: 0
+            val realIndex =
+                if (cfg != null && cursor in cfg.questions.indices) {
+                    (0..cursor).count { cfg.questions[it] !is Question.Intro }
+                } else {
+                    1
+                }
             val state = fsmState
             _uiState.value =
                 when (state) {
@@ -602,7 +610,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.SingleChoiceAllInOne(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             options = state.question.options,
@@ -623,7 +631,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.SingleChoiceStaged(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             options = state.question.options,
@@ -644,7 +652,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.SingleChoiceStaged(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             options = state.question.options,
@@ -665,7 +673,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.MultiChoiceAllInOne(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             options = state.question.options,
@@ -686,7 +694,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.MultiChoiceStaged(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             options = state.question.options,
@@ -707,7 +715,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.MultiChoiceStaged(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             options = state.question.options,
@@ -786,7 +794,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.FillBlankAllInOne(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             answer = state.answer,
@@ -805,7 +813,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.FillBlankStaged(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             stage = QuestionUiState.Stage.STEM,
@@ -824,7 +832,7 @@ class QuestionViewModel
                             (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
                         QuestionUiState.FillBlankStaged(
                             qid = state.question.qid,
-                            questionIndex = cursor + 1,
+                            questionIndex = realIndex,
                             totalQuestions = totalQuestions,
                             stem = state.question.stem,
                             stage = QuestionUiState.Stage.OPTIONS,
