@@ -348,6 +348,13 @@ class ConfigParser
             }
             val mode = if (modeValue == "all_in_one") PresentMode.ALL_IN_ONE else PresentMode.STAGED
 
+            // intro pages may omit durationMs (button-driven), so they
+            // parse durations themselves rather than going through the
+            // strict shared parser.
+            if (type == "intro") {
+                return parseIntro(sourceName, section, mode, errors)
+            }
+
             val durations = parseDurations(sourceName, section, mode, errors) ?: return null
 
             return when (type) {
@@ -355,7 +362,6 @@ class ConfigParser
                 "multi" -> parseMultiChoice(sourceName, section, mode, durations, errors)
                 "memory" -> parseMemoryQuestion(section, mode, durations, errors, sourceName)
                 "fill" -> parseFillBlank(sourceName, section, mode, durations, errors)
-                "intro" -> parseIntro(sourceName, section, mode, durations, errors)
                 else -> null
             }
         }
@@ -651,17 +657,27 @@ class ConfigParser
             sourceName: String,
             section: Section,
             mode: PresentMode,
-            durations: Durations,
             errors: MutableList<ParseError>,
         ): Question? {
             val stem = parseStem(sourceName, section, errors) ?: return null
+            // durationMs is optional for intro; missing → 0L (no auto-advance,
+            // user must tap 下一页). When present, the same 1000..600000 range
+            // applies as everywhere else.
+            val durationField = section.fields["durationMs"]
+            val durationMs =
+                if (durationField == null) {
+                    0L
+                } else {
+                    parseDurationValue(sourceName, section.qid, "durationMs", durationField, errors)
+                        ?: return null
+                }
             val showNext = parseShowNext(section)
             val showCountdown = parseShowCountdown(section)
             return Question.Intro(
                 qid = section.qid,
                 mode = mode,
-                stemDurationMs = durations.stemDurationMs,
-                optionsDurationMs = durations.optionsDurationMs,
+                stemDurationMs = null,
+                optionsDurationMs = durationMs,
                 stem = stem,
                 showNextButton = showNext,
                 showCountdown = showCountdown,

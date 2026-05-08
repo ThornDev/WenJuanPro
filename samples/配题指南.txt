@@ -214,14 +214,16 @@ durationMs: 15000              倒计时（毫秒）；时间到自动跳过
 stem: 接下来是一组听力题，请戴好耳机后点击下一页
 
 可选参数:
+  durationMs                    省略表示"无倒计时"——不会自动翻页，
+                                顶部进度条不显示，「下一页」按钮强制
+                                显示（即使 showNext: false 也会被忽
+                                略，否则用户卡死）。研究员只想用按钮
+                                控制时直接不写这一行即可。
   showNext: true                是否显示「下一页」按钮（默认 true）
                                 false 表示强制等倒计时结束才能跳过
+                                （仅在 durationMs 存在时生效）
   showCountdown: true           是否显示顶部倒计时进度条（默认 true）
-                                false 适合"音频试听"等场景：学生自己
-                                听完点「下一页」即可，不需要可视计时
-                                （注意：底层定时器仍然在跑，到点也会
-                                自动跳；想完全靠手动可把 durationMs
-                                设大一些，例如 600000=10分钟）
+                                durationMs 不写时，进度条强制隐藏
 
 带图片的过渡页（强制阅读 30 秒）：
 [Q6_NOTICE]
@@ -242,10 +244,9 @@ stem: 现在进入记忆部分，请仔细听以下指令|audio:memory_intro.mp3
 [Q8_AUDIO_CHECK]
 type: intro
 mode: all_in_one
-durationMs: 600000              定一个大的兜底值
+                                直接不写 durationMs：无超时，
+                                进度条隐藏、按钮强制显示
 stem: 请试听以下音频确认能听清楚|audio:audio_test.mp3
-showCountdown: false            隐藏顶部倒计时条
-showNext: true                  显示「下一页」按钮
 
 注意:
   - mode 写 all_in_one 即可（intro 没有"题干阶段 / 选项阶段"区分）

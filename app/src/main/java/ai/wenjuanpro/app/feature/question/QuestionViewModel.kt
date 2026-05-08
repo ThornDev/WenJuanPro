@@ -847,18 +847,26 @@ class QuestionViewModel
                         )
                     }
                     is QuestionFsmState.IntroDisplaying -> {
-                        val durationMs = state.question.optionsDurationMs.coerceAtLeast(1L)
+                        val rawDuration = state.question.optionsDurationMs
+                        val hasTimer = rawDuration > 0L
+                        val durationMs = rawDuration.coerceAtLeast(1L)
                         val elapsed = (nowMs - state.stageEnteredMs).coerceAtLeast(0L)
                         val remaining = (durationMs - elapsed).coerceAtLeast(0L)
                         val progress =
-                            (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                            if (hasTimer) {
+                                (remaining.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                            } else {
+                                1f
+                            }
                         QuestionUiState.IntroDisplay(
                             qid = state.question.qid,
                             stem = state.question.stem,
-                            showNextButton = state.question.showNextButton,
-                            showCountdown = state.question.showCountdown,
+                            // when there is no timer the next button is the only
+                            // way out, so force it on; likewise hide the bar.
+                            showNextButton = state.question.showNextButton || !hasTimer,
+                            showCountdown = state.question.showCountdown && hasTimer,
                             countdownProgress = progress,
-                            isWarning = remaining <= WARNING_THRESHOLD_MS,
+                            isWarning = hasTimer && remaining <= WARNING_THRESHOLD_MS,
                         )
                     }
                     is QuestionFsmState.Writing -> _uiState.value
@@ -898,6 +906,9 @@ class QuestionViewModel
                     else -> return
                 }
             if (durationMs <= 0L) {
+                // Intro pages can opt out of auto-advance by omitting durationMs
+                // — leave the timer off and let the 下一页 button drive things.
+                if (fsmState is QuestionFsmState.IntroDisplaying) return
                 onIntent(QuestionIntent.TimerExpired)
                 return
             }
