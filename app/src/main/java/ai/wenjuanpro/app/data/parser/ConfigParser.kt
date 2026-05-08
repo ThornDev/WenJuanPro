@@ -646,6 +646,7 @@ class ConfigParser
         ): Question? {
             val stem = parseStem(sourceName, section, errors) ?: return null
             val showNext = parseShowNext(section)
+            val showCountdown = parseShowCountdown(section)
             return Question.Intro(
                 qid = section.qid,
                 mode = mode,
@@ -653,11 +654,20 @@ class ConfigParser
                 optionsDurationMs = durations.optionsDurationMs,
                 stem = stem,
                 showNextButton = showNext,
+                showCountdown = showCountdown,
             )
         }
 
         private fun parseShowNext(section: Section): Boolean {
             val raw = section.fields["showNext"]?.value?.trim()?.lowercase() ?: return true
+            return when (raw) {
+                "false", "0", "no", "hide", "off" -> false
+                else -> true
+            }
+        }
+
+        private fun parseShowCountdown(section: Section): Boolean {
+            val raw = section.fields["showCountdown"]?.value?.trim()?.lowercase() ?: return true
             return when (raw) {
                 "false", "0", "no", "hide", "off" -> false
                 else -> true

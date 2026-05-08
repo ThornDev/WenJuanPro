@@ -122,6 +122,7 @@ sealed interface QuestionUiState {
         val qid: String,
         val stem: StemContent,
         val showNextButton: Boolean = true,
+        val showCountdown: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState

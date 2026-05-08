@@ -853,6 +853,7 @@ class QuestionViewModel
                             qid = state.question.qid,
                             stem = state.question.stem,
                             showNextButton = state.question.showNextButton,
+                            showCountdown = state.question.showCountdown,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )

@@ -41,11 +41,13 @@ fun IntroContent(
                 .testTag(IntroContentTags.ROOT),
     ) {
         Spacer(Modifier.height(24.dp))
-        CountdownBar(
-            progress = state.countdownProgress,
-            isWarning = state.isWarning,
-        )
-        Spacer(Modifier.height(8.dp))
+        if (state.showCountdown) {
+            CountdownBar(
+                progress = state.countdownProgress,
+                isWarning = state.isWarning,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
         Box(
             modifier =
                 Modifier
