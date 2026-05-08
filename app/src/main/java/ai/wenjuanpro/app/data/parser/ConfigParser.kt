@@ -624,6 +624,7 @@ class ConfigParser
                     raw in setOf("true", "1", "yes", "on")
                 } ?: false
             val showSubmit = parseShowSubmit(section)
+            val numericInput = parseNumericInput(section)
             return Question.FillBlank(
                 qid = section.qid,
                 mode = mode,
@@ -634,7 +635,16 @@ class ConfigParser
                 score = scoreValue,
                 caseSensitive = caseSensitive,
                 showSubmitButton = showSubmit,
+                numericInput = numericInput,
             )
+        }
+
+        private fun parseNumericInput(section: Section): Boolean {
+            val raw = section.fields["inputType"]?.value?.trim()?.lowercase() ?: return true
+            return when (raw) {
+                "text", "string", "alpha", "any" -> false
+                else -> true
+            }
         }
 
         private fun parseIntro(

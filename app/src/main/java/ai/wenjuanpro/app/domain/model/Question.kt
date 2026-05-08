@@ -81,6 +81,8 @@ sealed interface Question {
         val score: Int,
         val caseSensitive: Boolean = false,
         val showSubmitButton: Boolean = true,
+        /** When true, the IME pops up the numeric keypad. */
+        val numericInput: Boolean = true,
     ) : Question
 
     /**

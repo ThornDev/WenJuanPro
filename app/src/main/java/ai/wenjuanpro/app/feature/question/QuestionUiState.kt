@@ -101,6 +101,7 @@ sealed interface QuestionUiState {
         val answer: String = "",
         val submitEnabled: Boolean = false,
         val showSubmitButton: Boolean = true,
+        val numericInput: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState
@@ -114,6 +115,7 @@ sealed interface QuestionUiState {
         val answer: String = "",
         val submitEnabled: Boolean = false,
         val showSubmitButton: Boolean = true,
+        val numericInput: Boolean = true,
         override val countdownProgress: Float = 1f,
         override val isWarning: Boolean = false,
     ) : QuestionUiState

@@ -35,6 +35,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 object StagedFillBlankTags {
@@ -135,7 +136,12 @@ fun StagedFillBlankScaffold(
                                 label = { Text(stringResource(R.string.question_fill_label)) },
                                 placeholder = { Text(stringResource(R.string.question_fill_placeholder)) },
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardOptions =
+                                    KeyboardOptions(
+                                        keyboardType =
+                                            if (state.numericInput) KeyboardType.Number else KeyboardType.Text,
+                                        imeAction = ImeAction.Done,
+                                    ),
                                 keyboardActions =
                                     KeyboardActions(onDone = {
                                         if (state.submitEnabled) onIntent(QuestionIntent.Submit)

@@ -167,6 +167,10 @@ score: 5                       分值（非负整数；命中任一即满分）
 可选参数（不写则用默认值）:
   caseSensitive: false         是否区分大小写（默认 false）
   showSubmit: true             是否显示提交按钮（默认 true）
+  inputType: number            软键盘类型（默认 number 数字键盘）
+                               number / numeric / digit  → 数字键盘
+                               text / string / alpha / any → 普通键盘
+                               文字答案（如 "巴黎"、"spring"）写 inputType: text
 
 -------------- 模式B: 分阶段模式 (staged) ------------------
 
@@ -560,3 +564,4 @@ stem: 请仔细听下面的音频然后填空|audio:q10_clip.mp3
 correct: 春天|春|spring
 score: 10
 caseSensitive: false
+inputType: text                 文字答案改用普通键盘

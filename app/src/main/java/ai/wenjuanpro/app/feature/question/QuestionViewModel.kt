@@ -800,6 +800,7 @@ class QuestionViewModel
                             answer = state.answer,
                             submitEnabled = state.answer.isNotBlank(),
                             showSubmitButton = state.question.showSubmitButton,
+                            numericInput = state.question.numericInput,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -820,6 +821,7 @@ class QuestionViewModel
                             answer = "",
                             submitEnabled = false,
                             showSubmitButton = state.question.showSubmitButton,
+                            numericInput = state.question.numericInput,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
@@ -839,6 +841,7 @@ class QuestionViewModel
                             answer = state.answer,
                             submitEnabled = state.answer.isNotBlank(),
                             showSubmitButton = state.question.showSubmitButton,
+                            numericInput = state.question.numericInput,
                             countdownProgress = progress,
                             isWarning = remaining <= WARNING_THRESHOLD_MS,
                         )
