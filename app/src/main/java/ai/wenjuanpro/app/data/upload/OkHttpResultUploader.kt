@@ -11,9 +11,14 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.X509TrustManager
 
 @Singleton
 class OkHttpResultUploader
@@ -21,11 +26,30 @@ class OkHttpResultUploader
     constructor(
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : ResultUploader {
+        // Internal/private deployment: skip TLS chain validation and host
+        // matching so the upload works against self-signed or
+        // misconfigured-chain backends without bundling certs.
+        private val trustAllManager =
+            object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<X509Certificate>?, authType: String?) = Unit
+
+                override fun checkServerTrusted(chain: Array<X509Certificate>?, authType: String?) = Unit
+
+                override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+            }
+
+        private val sslSocketFactory: SSLSocketFactory =
+            SSLContext.getInstance("TLS").apply {
+                init(null, arrayOf(trustAllManager), SecureRandom())
+            }.socketFactory
+
         private val client: OkHttpClient =
             OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
+                .sslSocketFactory(sslSocketFactory, trustAllManager)
+                .hostnameVerifier { _, _ -> true }
                 .build()
 
         override suspend fun upload(file: File): Result<Unit> =
