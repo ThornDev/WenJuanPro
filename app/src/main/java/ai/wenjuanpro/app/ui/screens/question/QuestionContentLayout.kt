@@ -84,19 +84,28 @@ private fun StemImage(
     widthDp: Int? = null,
     heightDp: Int? = null,
 ) {
-    val widthMod = if (widthDp != null) Modifier.width(widthDp.dp) else Modifier.fillMaxWidth()
-    val heightMod = Modifier.height((heightDp ?: 160).dp)
+    val height = (heightDp ?: 160).dp
+    // Outer Box fills the parent width and centers the image so that
+    // fixed-width stems (e.g. img:photo.png:600x400) sit in the middle
+    // of the screen rather than hugging the left edge.
     Box(
-        modifier =
-            widthMod
-                .then(heightMod)
-                .clip(RoundedCornerShape(8.dp))
-                .testTag(QuestionContentTags.STEM_IMAGE_PLACEHOLDER),
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
-        AssetImage(
-            fileName = fileName,
-            modifier = Modifier.fillMaxWidth().height((heightDp ?: 160).dp),
-        )
+        val imageWidth =
+            if (widthDp != null) Modifier.width(widthDp.dp) else Modifier.fillMaxWidth()
+        Box(
+            modifier =
+                imageWidth
+                    .height(height)
+                    .clip(RoundedCornerShape(8.dp))
+                    .testTag(QuestionContentTags.STEM_IMAGE_PLACEHOLDER),
+        ) {
+            AssetImage(
+                fileName = fileName,
+                modifier = Modifier.fillMaxWidth().height(height),
+            )
+        }
     }
 }
 
