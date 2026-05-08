@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security config — keeps cleartext disabled globally and
+  loosens the trust store *only* for the result-upload backend.
+
+  Why a domain override? Some Android devices (esp. older ROMs / private
+  CAs) report "Trust anchor for certification path not found" against
+  ineutech.com. Two practical fixes:
+
+    1. Drop the server's full certificate chain into
+       res/raw/ineutech_ca.crt (PEM, may contain leaf + intermediate
+       + root) and uncomment the @raw/ineutech_ca line below.
+    2. Install the CA on the device (Settings → 安全 → 加密与凭据 →
+       安装证书) and the "user" anchor below will pick it up. Without
+       it the system store is still used as the default.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config includeSubdomains="true">
+        <domain includeSubdomains="true">ineutech.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+            <!-- <certificates src="@raw/ineutech_ca" /> -->
+        </trust-anchors>
+    </domain-config>
+</network-security-config>
