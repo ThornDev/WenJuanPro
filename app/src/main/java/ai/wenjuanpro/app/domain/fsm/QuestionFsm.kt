@@ -394,30 +394,33 @@ class QuestionFsm
         private fun onOptionsTimeout(state: QuestionFsmState): QuestionFsmState =
             when (state) {
                 is QuestionFsmState.QuestionAllInOne ->
+                    // Honour any selection the student already made — only
+                    // bare cursors with selectedIndex == null count as
+                    // not-answered.
                     writingFromScore(
                         question = state.question,
-                        answer = null,
+                        answer = state.selectedIndex,
                         stemMs = null,
                         optionsMs = state.question.optionsDurationMs,
                     )
                 is QuestionFsmState.QuestionStagedOptions ->
                     writingFromScore(
                         question = state.question,
-                        answer = null,
+                        answer = state.selectedIndex,
                         stemMs = state.stemMs,
                         optionsMs = state.question.optionsDurationMs,
                     )
                 is QuestionFsmState.MultiAllInOne ->
                     writingFromMultiScore(
                         question = state.question,
-                        selectedIndices = null,
+                        selectedIndices = state.selectedIndices.takeIf { it.isNotEmpty() },
                         stemMs = null,
                         optionsMs = state.question.optionsDurationMs,
                     )
                 is QuestionFsmState.MultiStagedOptions ->
                     writingFromMultiScore(
                         question = state.question,
-                        selectedIndices = null,
+                        selectedIndices = state.selectedIndices.takeIf { it.isNotEmpty() },
                         stemMs = state.stemMs,
                         optionsMs = state.question.optionsDurationMs,
                     )
