@@ -9,7 +9,7 @@
 
 /sdcard/WenJuanPro/
 ├── config/          研究员放 TXT 题库文件（App 只读）
-│   └── xxx.txt
+│   └── quiz.txt     ← 固定文件名，App 只读这一份；目录里其它 .txt 会被忽略
 ├── assets/          研究员放图片素材 PNG/JPG（App 只读）
 │   └── xxx.png
 ├── results/         App 自动写入答题结果（研究员回收）

@@ -31,51 +31,47 @@ class ConfigRepositoryImpl
 
         override suspend fun loadAll(): List<ConfigLoadResult> =
             withContext(ioDispatcher) {
-                val paths =
+                // We deliberately load a single fixed file rather than every
+                // .txt under config/, because the field workflow ships exactly
+                // one questionnaire at a time and "pick the first valid one"
+                // turned out to be a reliable way to drift onto an old draft
+                // left in the directory. Researchers wanting a different
+                // active config just rename their file to CONFIG_FILE_NAME.
+                val path = CONFIG_DIR + CONFIG_FILE_NAME
+                if (!fileSystem.exists(path)) return@withContext emptyList()
+                val result =
                     try {
-                        fileSystem.listFiles(CONFIG_DIR, ".txt")
+                        val bytes = fileSystem.readBytes(path)
+                        when (val pr = parser.parse(CONFIG_FILE_NAME, bytes)) {
+                            is ParseResult.Success -> ConfigLoadResult.Valid(pr.config)
+                            is ParseResult.Failure ->
+                                ConfigLoadResult.Invalid(CONFIG_FILE_NAME, pr.errors)
+                        }
                     } catch (e: IOException) {
-                        Timber.w("listFiles failed for config dir")
-                        return@withContext emptyList()
-                    }
-
-                val results =
-                    paths.map { path ->
-                        val fileName = path.substringAfterLast('/').ifEmpty { path }
-                        try {
-                            val bytes = fileSystem.readBytes(path)
-                            when (val pr = parser.parse(fileName, bytes)) {
-                                is ParseResult.Success -> ConfigLoadResult.Valid(pr.config)
-                                is ParseResult.Failure -> ConfigLoadResult.Invalid(fileName, pr.errors)
-                            }
-                        } catch (e: IOException) {
-                            Timber.w("readBytes failed for a config file; marking invalid")
-                            ConfigLoadResult.Invalid(
-                                fileName = fileName,
-                                errors =
-                                    listOf(
-                                        ParseError(
-                                            line = 0,
-                                            field = null,
-                                            code = ParseErrorCode.CONFIG_FIELD_INVALID,
-                                            message = "$fileName: 读取文件失败（IO 异常）",
-                                        ),
+                        Timber.w("readBytes failed for active config file; marking invalid")
+                        ConfigLoadResult.Invalid(
+                            fileName = CONFIG_FILE_NAME,
+                            errors =
+                                listOf(
+                                    ParseError(
+                                        line = 0,
+                                        field = null,
+                                        code = ParseErrorCode.CONFIG_FIELD_INVALID,
+                                        message = "$CONFIG_FILE_NAME: 读取文件失败（IO 异常）",
                                     ),
-                            )
-                        }
+                                ),
+                        )
                     }
-
-                results.sortedWith(
-                    compareBy { result ->
-                        when (result) {
-                            is ConfigLoadResult.Valid -> result.config.configId
-                            is ConfigLoadResult.Invalid -> result.fileName
-                        }
-                    },
-                )
+                listOf(result)
             }
 
         companion object {
             private const val CONFIG_DIR = "/sdcard/WenJuanPro/config/"
+            /**
+             * Single source of truth for the active questionnaire filename.
+             * Edit here when the field protocol changes; only one file under
+             * /sdcard/WenJuanPro/config/ is ever read.
+             */
+            const val CONFIG_FILE_NAME: String = "quiz.txt"
         }
     }

@@ -50,7 +50,7 @@
     <string name="config_list_question_count">%1$d 题</string>
     <string name="config_list_question_count_unknown">\? 题</string>
     <string name="config_list_view_errors">查看错误详情</string>
-    <string name="config_list_empty_title">请将 config TXT 文件放入 /sdcard/WenJuanPro/config/ 后点击刷新</string>
+    <string name="config_list_empty_title">请将题目配置 quiz.txt 放入 /sdcard/WenJuanPro/config/ 后点击刷新</string>
     <string name="config_list_timeout_title">扫描题库超时，请检查目录是否存在大量文件</string>
     <string name="config_list_error_title">扫描题库失败，请重试</string>
     <string name="config_list_retry_button">重试</string>
