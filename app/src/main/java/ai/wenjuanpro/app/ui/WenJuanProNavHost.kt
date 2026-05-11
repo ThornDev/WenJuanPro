@@ -170,7 +170,12 @@ fun WenJuanProNavHost(navController: NavHostController = rememberNavController()
                     navController.navigate(
                         "welcome?studentId=$studentId&configId=$configId",
                     ) {
-                        popUpTo("resume?studentId=$studentId&configId=$configId") { inclusive = true }
+                        // Pop the stale welcome too (and the resume above
+                        // it) so the new welcome entry comes with a fresh
+                        // ViewModel; otherwise launchSingleTop reuses the
+                        // old VM that is still stuck on Loading from when
+                        // it routed us to resume in the first place.
+                        popUpTo("welcome?studentId=$studentId&configId=$configId") { inclusive = true }
                         launchSingleTop = true
                     }
                 },
